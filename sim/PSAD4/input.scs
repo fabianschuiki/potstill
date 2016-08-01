@@ -1,0 +1,29 @@
+// Copyright (c) 2016 Fabian Schuiki
+// Spectre simulation to verify operation of the AD cell.
+include "../preamble.scs"
+
+// Netlist of the circuit under test.
+include "../../umc65/netlists/components.cir"
+include "PSAD4.cir"
+
+// Parameters.
+parameters tslew=30p
+
+// Circuit under test.
+X (CKP CKN A0 A1 A0 A1 S0 GP0 GN0 S1 GP1 GN1 S2 GP2 GN2 S3 GP3 GN3 VDD 0) PSAD4
+VA0 (A0 0) vsource type=pulse val0=0 val1=1.2 delay=2n width=2n-tslew period=4n rise=tslew fall=tslew
+VA1 (A1 0) vsource type=pulse val0=0 val1=1.2 delay=4n width=4n-tslew period=8n rise=tslew fall=tslew
+VCK0 (CKP 0) vsource type=pulse val0=0 val1=1.2 delay=1n width=1n-tslew period=2n rise=tslew fall=tslew
+VCK1 (CKN 0) vsource type=pulse val1=0 val0=1.2 delay=1n width=1n-tslew period=2n rise=tslew fall=tslew
+VDD (VDD 0) vsource type=dc dc=1.2
+
+// Specify analysis.
+A tran stop=9n errpreset=conservative write="spectre.ic" writefinal="spectre.fc"
+
+// Specify what to save.
+save VDD:p
+save CK* depth=1
+save A* depth=1
+save S* depth=1
+save GP* depth=1
+save GN* depth=1

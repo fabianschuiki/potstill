@@ -4,6 +4,8 @@
 import sys
 import math
 import argparse
+import yaml
+import subprocess
 
 BASE = sys.path[0]
 
@@ -22,13 +24,16 @@ def makeNetlist(size, bits):
 	netsWA = " ".join(["WA%d" % i for i in range(size)])
 	netsSGPGN = " ".join(["nS%d nGP%d nGN%d" % (i,i,i) for i in range(2**size)])
 
-	# Add the clock buffer that provides the root CKP and CKN signals.
-	lines.append("XI0 CK nCKN INV wp=660e-9 wn=480e-9")
-	lines.append("XI1 nCKN nCKP INV wp=660e-9 wn=480e-9")
+	# Add the root clock gates.
+	lines.append("XRWCKG RE WE CK nRCKP nRCKN nWCKP nWCKN VDD VSS PSRWCKG")
 
-	# Instantiate the two global clock gates.
-	lines.append("XWCKG WE nCKP nCKN nWCKP nWCKN CKG")
-	lines.append("XRCKG RE nCKP nCKN nRCKP nRCKN CKG")
+	# # Add the clock buffer that provides the root CKP and CKN signals.
+	# lines.append("XI0 CK nCKN VDD VSS INV PARAMS: wp=630e-9 wn=260e-9")
+	# lines.append("XI1 nCKN nCKP VDD VSS INV PARAMS: wp=630e-9 wn=260e-9")
+
+	# # Instantiate the two global clock gates.
+	# lines.append("XWCKG WE nCKP nCKN nWCKP nWCKN VDD VSS CKG")
+	# lines.append("XRCKG RE nCKP nCKN nRCKP nRCKN VDD VSS CKG")
 
 	# Instantiate the address decoder.
 	lines.append("XAD nWCKP nWCKN %s %s %s VDD VSS PSAD%d" % (
@@ -37,13 +42,13 @@ def makeNetlist(size, bits):
 
 	# Instantiate the write data registers.
 	for i in range(bits):
-		lines.append("XWDREG%d WD%d nWCKP nWCKN nWD%d i%d VDD VSS DFCKPNQPN" % (
+		lines.append("XWDREG%d WD%d nWCKP nWCKN nWD%d iw%d VDD VSS PSREG" % (
 			i, i, i, i
 		))
 
 	# Instantiate the read address registers.
-	for i in range(bits):
-		lines.append("XRAREG%d RA%d nRCKP nRCKN nRA%d i%d VDD VSS DFCKPNQPN" % (
+	for i in range(size):
+		lines.append("XRAREG%d RA%d nRCKP nRCKN nRA%d ir%d VDD VSS PSREG" % (
 			i, i, i, i
 		))
 
@@ -74,14 +79,15 @@ def makeNetlistForBA(size):
 		" ".join(["S%d GP%d GN%d" % (i,i,i) for i in range(2**size)])
 	))
 	for i in range(2**size):
-		lines.append("X%d D S%d GP%d GN%d nL0Q%d VDD VSS PSBA1" % (
+		lines.append("X%d D GP%d GN%d S%d nL0Q%d VDD VSS PSBA1" % (
 			i, i, i, i, i
 		))
 	if size % 2 == 0:
 		outName = "nQ"
-		lines.append("XINV nQ Q VDD VSS INV wp=660e-9 wn=480e-9")
+		lines.append("XINV nQ Q VDD VSS PSRMINV")
 	else:
-		outName = "Q"
+		outName = "nQ"
+		lines.append("XBUF nQ Q VDD VSS PSRMBUF")
 	for i in range(size):
 		for n in range(2**(size-i-1)):
 			lines.append("XL%dQ%d nL%dQ%d nL%dQ%d %s VDD VSS %s" % (
@@ -89,7 +95,7 @@ def makeNetlistForBA(size):
 				i, n*2+0,
 				i, n*2+1,
 				("nL%dQ%d" % (i+1, n)) if i < size-1 else outName,
-				"ND2" if i % 2 == 0 else "NR2"
+				"PSRMND" if i % 2 == 0 else "PSRMNR"
 			))
 	lines.append(".ENDS")
 	return "\n".join(lines)
@@ -104,34 +110,34 @@ def makeNetlistForAD(size):
 		" ".join(["S%d GP%d GN%d" % (i,i,i) for i in range(2**size)])
 	))
 	for i in range(2**size):
-		lines.append("XCKG%d CKP CKN nWE%d GP%d GN%d VDD VSS CKG " % (
+		lines.append("XCKG%d nWE%d CKP CKN GP%d GN%d VDD VSS PSADCKG " % (
 			i, i, i, i,
 		))
 
-	if size > 3:
-		radOutName = "S%d"
-		wadOutName = "nWEB%d"
-		invIn = "nWEB%d"
-		invOut = "nWE%d"
-	else:
-		radOutName = "nRE%d"
-		wadOutName = "nWE%d"
-		invIn = "nRE%d"
-		invOut = "S%d"
+	# if size > 3:
+	# 	radOutName = "S%d"
+	# 	wadOutName = "nWEB%d"
+	# 	invIn = "nWEB%d"
+	# 	invOut = "nWE%d"
+	# else:
+	# 	radOutName = "nRE%d"
+	# 	wadOutName = "nWE%d"
+	# 	invIn = "nRE%d"
+	# 	invOut = "S%d"
 
 	lines.append("XRAD %s %s VDD VSS PSADOH%d" % (
 		" ".join(["RA%d" % i for i in range(size)]),
-		" ".join([radOutName % i for i in range(2**size)]),
+		" ".join(["S%d" % i for i in range(2**size)]),
 		2**size
 	))
 	lines.append("XWAD %s %s VDD VSS PSADOH%d" % (
 		" ".join(["WA%d" % i for i in range(size)]),
-		" ".join([wadOutName % i for i in range(2**size)]),
+		" ".join(["nWE%d" % i for i in range(2**size)]),
 		2**size
 	))
 
-	for i in range(2**size):
-		lines.append("XINV%d %s %s VDD VSS INV wp=660e-9 wn=480e-9" % (i, invIn % i, invOut % i))
+	# for i in range(2**size):
+	# 	lines.append("XINV%d %s %s VDD VSS PSADINV" % (i, invIn % i, invOut % i))
 
 	lines.append(".ENDS")
 	return makeNetlistForADOH(size) + "\n\n" + "\n".join(lines)
@@ -149,18 +155,207 @@ def makeNetlistForADOH(size):
 	))
 	N = 0
 	for i in range(size):
-		lines.append("XI%d A%d N%d VDD VSS INV wp=660e-9 wn=480e-9" % (N, i, i))
+		lines.append("XI%d A%d N%d VDD VSS PSADINV" % (N, i, i))
 		N += 1
 	N = 0
+	actHiInputs = (size > 3)
 	for i in range(2**size):
 		lines.append("X%d %s Z%d VDD VSS PSADOH%dR" % (N,
-			" ".join([("A%d" if i & (1 << n) else "N%d") % n for n in range(size)]),
+			" ".join([("A%d" if (i if actHiInputs else ~i) & (1 << n) else "N%d") % n for n in range(size)]),
 			i,
 			2**size
 		))
 		N += 1
 	lines.append(".ENDS")
 	return "\n".join(lines)
+
+
+def makeNodesetForADCKG(prefix, value):
+	print(prefix+".X1.n1 %g" % value)
+
+
+def makeNodesetForAD(prefix, num_addr):
+	for i in range(2**num_addr):
+		makeNodesetForADCKG(prefix+".XCKG%d" % i, 0)
+
+
+def makeNodesetForREGLA(prefix, value):
+	print(prefix+".n1 %g" % value)
+
+
+def makeNodesetForREG(prefix, value):
+	makeNodesetForREGLA(prefix+".XI0", value)
+	makeNodesetForREGLA(prefix+".XI1", value)
+
+
+def makeNodesetForBA1(prefix, value):
+	print(prefix+".nFB", 1.2-value)
+
+
+def makeNodesetForBT(prefix, num_addr, value):
+	for i in range(2**num_addr):
+		makeNodesetForBA1(prefix+".X%d" % i, value)
+
+
+def makeNodeset(prefix, num_addr, num_bits):
+	# Global clock gate.
+	makeNodesetForADCKG(prefix+".XRWCKG.X0", 0)
+	makeNodesetForADCKG(prefix+".XRWCKG.X1", 0)
+
+	# Address decoder.
+	makeNodesetForAD(prefix+".XAD", num_addr)
+
+	# Write data and read address registers.
+	for i in range(num_addr):
+		makeNodesetForREG(prefix+".XRAREG%d" % i, 0)
+	for i in range(2**num_addr):
+		makeNodesetForREG(prefix+".XWDREG%d" % i, 0)
+
+	# Memory columns.
+	for i in range(num_bits):
+		makeNodesetForBT(prefix+".XBA%d" % i, num_addr, 0)
+
+
+def generateLayout(size, bits, outfile):
+
+	# Read the configuration file for the technology.
+	with open("%s/umc65/config.yml" % BASE, "r") as stream:
+		config = yaml.load(stream)
+	# print(config)
+
+	cmds = list()
+
+	# Load the input GDS data.
+	for s in config["import"]["gds"]:
+		cmds.append("load_gds \"%s/umc65/%s\";" % (BASE, s))
+
+	num_bits_left   = int(bits/2)
+	num_bits_right  = bits - num_bits_left
+	num_addrs_left  = int(size/2)
+	num_addrs_right = size - num_addrs_left
+
+	G = config["track"]
+	row_height = config["row-height"]*G
+	bitarray_cell = "PSBT%d" % (2**size)
+
+	bit_width = config["widths"]["bitarray"]*G
+	rwckg_width = config["widths"]["rwckg"]*G
+	addrdec_width = config["widths"]["addrdec"][2**size]*G
+	rareg_width = config["widths"]["rareg"]*G
+
+	# Assemble the root cell.
+	x = 0
+	cmds.append("cell \"PS%dX%d\" {" % (2**size, bits))
+	cmds.append("set_size %g %g;" % (bits*bit_width+addrdec_width, (2**size + 1)*row_height))
+	for i in range(num_bits_left):
+		cmds.append("inst %s \"XBA%d\" {" % (bitarray_cell, i))
+		cmds.append("set_orientation MX;")
+		cmds.append("set_position %g 0;" % (x+bit_width))
+		cmds.append("}")
+		x += bit_width
+
+	xral = x
+	cmds.append("inst PSAD%d \"XAD\" {" % (2**size))
+	cmds.append("set_position %g 0;" % x)
+	cmds.append("}")
+	x += addrdec_width
+	xrar = x
+
+	rwckg_x = x-rwckg_width
+	rwckg_y = (2**size)*row_height
+	cmds.append("inst PSRWCKG \"XRWCKG\" {")
+	cmds.append("set_position %g %g;" % (rwckg_x, rwckg_y))
+	cmds.append("}")
+
+	for i in range(num_bits_right):
+		cmds.append("inst %s \"XBA%d\" {" % (bitarray_cell, i+num_bits_left))
+		cmds.append("set_position %g 0;" % x)
+		cmds.append("}")
+		x += bit_width
+
+	x = xral - (num_addrs_left-1)*rareg_width
+	for i in range(num_addrs_left):
+		cmds.append("inst PSREGRA \"XRA%d\" {" % i)
+		cmds.append("set_orientation R180;")
+		cmds.append("set_position %g %g;" % (x, (2**size+2)*row_height))
+		cmds.append("}")
+		x += rareg_width
+
+	x = xrar
+	for i in range(num_addrs_right):
+		cmds.append("inst PSREGRA \"XRA%d\" {" % (num_addrs_left+i))
+		cmds.append("set_orientation MY;")
+		cmds.append("set_position %g %g;" % (x, (2**size+2)*row_height))
+		cmds.append("}")
+		x += rareg_width
+
+	# Add the power pins.
+	pwr_pin_layer = int(config["pins"]["power"]["layer"])
+	for i in range(0, 2**size+3, 2):
+		cmds.append("add_gds_text %d %d %g %g VSS;" % (pwr_pin_layer, 0, xral+1*G, i*row_height))
+	for i in range(1, 2**size+2, 2):
+		cmds.append("add_gds_text %d %d %g %g VDD;" % (pwr_pin_layer, 0, xral+1*G, i*row_height))
+
+	# Add the write address pins.
+	addr_pin_layer = int(config["pins"]["addrdec"]["layer"])
+	addr_vtracks = [int(x) for x in config["pins"]["addrdec"]["vtracks"][2**size]]
+	N = 0
+	for x in addr_vtracks:
+		cmds.append("add_gds_text %d %d %g %g WA%d;" % (
+			addr_pin_layer, 0,
+			xral + (x+0.5)*G, (2**size)*row_height,
+			N
+		))
+		N += 1
+
+	# Add the global clock gate pins.
+	rwckg_pins = config["pins"]["rwckg"]
+	for (name,pin) in rwckg_pins.items():
+		cmds.append("add_gds_text %d %d %g %g %s;" % (
+			int(pin[2]), 0,
+			rwckg_x + (int(pin[0])+0.5)*G, rwckg_y + int(pin[1])*G,
+			name
+		))
+
+	# Add the bit array pins.
+	bitarray_pins = config["pins"]["bitarray"]
+	for (name,pin) in bitarray_pins.items():
+		for i in range(num_bits_left):
+			cmds.append("add_gds_text %d %d %g %g %s%d;" % (
+				int(pin[2]), 0,
+				(i+1)*bit_width - (int(pin[0])+0.5)*G, (2**size)*row_height + int(pin[1])*G,
+				name, i
+			))
+		for i in range(num_bits_right):
+			cmds.append("add_gds_text %d %d %g %g %s%d;" % (
+				int(pin[2]), 0,
+				xrar+i*bit_width + (int(pin[0])+0.5)*G, (2**size)*row_height + int(pin[1])*G,
+				name, i + num_bits_left
+			))
+
+	cmds.append("}")
+
+	# Create some GDS output from the cells generated above.
+	cmds.append("gds \"PS%dX%d\" {" % (2**size, bits))
+	# cmds.append("copy_cell_gds \"%s\";" % bitarray_cell)
+	# cmds.append("copy_cell_gds \"PSAD%d\";" % (2**size))
+	# for i in range(size):
+	# 	cmds.append("copy_cell_gds \"PSBA%d\";" % (2**i))
+	# for s in ["PSRMND", "PSRMNR"]:
+	# 	cmds.append("copy_cell_gds \"%s\";" % s)
+	cmds.append("make_gds_for_cell \"PS%dX%d\";" % (2**size, bits))
+	cmds.append("write_gds \"%s\";" % outfile)
+	cmds.append("}")
+
+	print("\n".join(cmds))
+
+	# Start phalanx and execute the commands.
+	with subprocess.Popen(["phalanx"], stdin=subprocess.PIPE, stderr=subprocess.PIPE, universal_newlines=True) as proc:
+		(proc_out, proc_err) = proc.communicate(input="\n".join(cmds))
+		sys.stderr.write(proc_err)
+		if proc.returncode != 0:
+			sys.stderr.write("Phalanx failed to generate GDS data.\n")
+			sys.exit(1)
 
 
 def mainNetlist(argv):
@@ -182,9 +377,135 @@ def mainNetlist(argv):
 		print(globals()[funcName](int(argv[1])))
 
 
+def mainNodeset(argv):
+	if len(argv) < 3:
+		printUsage()
+		sys.exit(1)
+	makeNodeset(argv[0], int(argv[1]), int(argv[2]))
+
+
+def mainLayout(argv):
+	if len(argv) < 3 or argv[0] == "-h" or argv[0] == "--help":
+		printUsage()
+		sys.exit(1)
+	generateLayout(int(argv[0]), int(argv[1]), argv[2])
+
+
+def makeScsForPowerChar(num_addr, num_bits):
+	VDD = 1.2
+	T = 1
+
+	cname = "PS%dX%d" % (2**num_addr, num_bits)
+	scs = list()
+	ocn = list()
+
+	ocn.append("openResults(\"./psf\")")
+	ocn.append("selectResult('tran)")
+
+	ocn.append("p = outfile(\"analysis.csv\", \"w\")")
+	ocn.append("fprintf(p, \"P_leak %g\\n\", integ(-IT(\"VDD:p\") 0n 1n) / 1n * 1.2)")
+	ocn.append("fprintf(p, \"E_idle_rise %g\\n\", integ(-IT(\"VDD:p\") 1n 2n) * 1.2)")
+	ocn.append("fprintf(p, \"E_idle_fall %g\\n\", integ(-IT(\"VDD:p\") 2n 3n) * 1.2)")
+
+
+	scs.append("// Automatically generated SPECTRE input file.")
+	scs.append("// %s" % cname)
+	scs.append("include \"%s/sim/preamble.scs\"" % BASE)
+	scs.append("include \"%s.cir\"" % cname)
+
+	scs.append("X (CK RE %s %s WE %s %s VDD 0) %s" % (
+		" ".join(["RA%d" % i for i in range(num_addr)]),
+		" ".join(["RD%d" % i for i in range(num_bits)]),
+		" ".join(["WA%d" % i for i in range(num_addr)]),
+		" ".join(["WD%d" % i for i in range(num_bits)]),
+		cname
+	))
+
+	scs.append("parameters tslew=30p")
+	scs.append("VDD (VDD 0) vsource type=dc dc=%g" % VDD)
+	scs.append("VCK (CK 0) vsource type=pulse val0=0 val1=%g delay=%gn width=%gn-tslew period=%gn rise=tslew fall=tslew" % (VDD, T, T, 3*T))
+
+	Tswp = (2**num_addr) * 3
+	Ts_rd = 3
+	Ts_wr = Ts_rd + Tswp
+	Ts_rw = Ts_wr + Tswp
+	Ts_done = Ts_rw + Tswp
+
+	scs.append("VRE (RE 0) vsource type=pulse val0=0 val1=%g delay=%gn width=%gn-tslew period=%gn rise=tslew fall=tslew" % (
+		VDD, Ts_rd*T, Tswp*T, 2*Tswp*T
+	))
+	scs.append("VWE (WE 0) vsource type=pulse val0=0 val1=%g delay=%gn width=%gn-tslew rise=tslew fall=tslew" % (
+		VDD, Ts_wr*T, 2*Tswp*T
+	))
+
+	for i in range(num_addr):
+		scs.append("VWA%d (WA%d 0) vsource type=pulse val0=0 val1=%g delay=%gn width=%gn-tslew period=%gn rise=tslew fall=tslew" % (
+			i, i, VDD,
+			(Ts_rd + (2**i)*3)*T,
+			(2**i*3)*T,
+			(2**i*6)*T
+		))
+
+	for p in [
+			("read_rise",  0, 1), ("read_fall",  0, 2),
+			("write_rise", 1, 1), ("write_fall", 1, 2),
+			("rw_rise",    2, 1), ("rw_fall",    2, 2),
+		]:
+		ocn.append("fprintf(p, \"E_%s %%g\\n\", (%s) / %d * 1.2)" % (
+			p[0],
+			" + ".join(["integ(-IT(\"VDD:p\") %gn %gn)" % (
+				((i+1)*3 + p[1]*Tswp + p[2]+0)*T,
+				((i+1)*3 + p[1]*Tswp + p[2]+1)*T
+			) for i in range(2**num_addr)]),
+			2**num_addr
+		))
+
+	# ocn.append("fprintf(p, \"E_read_rise %%g\\n\", (%s) / %d * 1.2)" % (
+	# 	" + ".join(["integ(-IT(\"VDD:p\") %gn %gn)" % (((i+1)*3 + 1)*T, ((i+1)*3 + 2)*T) for i in range(2**num_addr)]),
+	# 	2**num_addr
+	# ))
+	# ocn.append("fprintf(p, \"E_read_fall %%g\\n\", (%s) / %d * 1.2)" % (
+	# 	" + ".join(["integ(-IT(\"VDD:p\") %gn %gn)" % (((i+1)*3 + 2)*T, ((i+1)*3 + 3)*T) for i in range(2**num_addr)]),
+	# 	2**num_addr
+	# ))
+
+	for i in range(num_addr):
+		scs.append("VRA%d (RA%d 0) vsource type=dc dc=0" % (i,i))
+	for i in range(num_bits):
+		scs.append("VWD%d (WD%d 0) vsource type=dc dc=0" % (i,i))
+
+	# Specify the transient analysis to perform.
+	scs.append("pwr tran stop=%gn errpreset=conservative write=\"spectre.ic\" writefinal=\"spectre.fc\" readns=\"%s.ns\"" % ((Ts_done+1)*T, cname))
+
+	# Specify what to save.
+	scs.append("save VDD:p")
+	scs.append("save CK RE WE")
+	scs.append("save RA* depth=1")
+	scs.append("save RD* depth=1")
+	scs.append("save WA* depth=1")
+	scs.append("save WD* depth=1")
+
+	ocn.append("close(p)")
+
+	return (
+		"\n".join(scs),
+		"\n".join(ocn)
+	)
+
+
+def mainChar(argv):
+	(outScs, outOcn) = makeScsForPowerChar(int(argv[0]), int(argv[1]))
+	with open(argv[2]+".scs", "w") as f:
+		f.write(outScs)
+	with open(argv[2]+".ocn", "w") as f:
+		f.write(outOcn)
+
+
 def printUsage():
 	sys.stderr.write("usage: potstill -h\n")
 	sys.stderr.write("   or: potstill netlist COMPONENT SIZE\n")
+	sys.stderr.write("   or: potstill nodeset PREFIX NADDR NBITS\n")
+	sys.stderr.write("   or: potstill layout ADDRWIDTH DATAWIDTH OUTFILE\n")
 
 
 def main(argv):

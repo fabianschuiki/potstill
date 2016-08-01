@@ -1,0 +1,24 @@
+// Copyright (c) 2016 Fabian Schuiki
+// Spectre simulation to verify operation of the ADOH cell.
+include "../preamble.scs"
+
+// Netlist of the circuit under test.
+include "../../umc65/netlists/components.cir"
+include "PSADOH4.cir"
+
+// Parameters.
+parameters tslew=30p
+
+// Circuit under test.
+X (A0 A1 Z0 Z1 Z2 Z3 VDD 0) PSADOH4
+VA0 (A0 0) vsource type=pulse val0=0 val1=1.2 delay=1n width=1n-tslew period=2n rise=tslew fall=tslew
+VA1 (A1 0) vsource type=pulse val0=0 val1=1.2 delay=2n width=2n-tslew period=4n rise=tslew fall=tslew
+VDD (VDD 0) vsource type=dc dc=1.2
+
+// Specify analysis.
+A tran stop=5n errpreset=conservative write="spectre.ic" writefinal="spectre.fc"
+
+// Save the VDD current flowing into the device and the voltages on the A and Z pins.
+save VDD:p
+save A* depth=1
+save Z* depth=1

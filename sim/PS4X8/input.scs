@@ -1,0 +1,36 @@
+// Copyright (c) 2016 Fabian Schuiki
+// Spectre simulation to verify operation of the PS4X8 macro.
+include "../preamble.scs"
+
+// Netlist of the circuit under test.
+include "PS4X8.cir"
+
+// Parameters.
+parameters tslew=30p ta=500p
+
+// Circuit under test.
+X (CK RE A0 A1 RD0 RD1 RD2 RD3 RD4 RD5 RD6 RD7 WE A0 A1 A0 A1 A0 A1 A0 A1 A0 A1 VDD 0) PS4X8
+
+VDD (VDD 0) vsource type=dc dc=1.2
+VCK (CK 0) vsource type=pulse val0=0 val1=1.2 delay=2n width=1n-tslew period=2n rise=tslew fall=tslew
+VA0 (A0 0) vsource type=pulse val0=0 val1=1.2 delay=2n+ta width=2n-tslew period=4n rise=tslew fall=tslew
+VA1 (A1 0) vsource type=pulse val0=0 val1=1.2 delay=4n+ta width=4n-tslew period=8n rise=tslew fall=tslew
+
+VRE (RE 0) vsource type=pulse val0=1.2 val1=0 delay=8n+ta width=8n-tslew rise=tslew fall=tslew
+VWE (WE 0) vsource type=pulse val0=0 val1=1.2 delay=8n+ta width=8n-tslew rise=tslew fall=tslew
+
+// Specify analysis.
+A tran stop=26n errpreset=conservative write="spectre.ic" writefinal="spectre.fc" readns="PS4X8.ns"
+
+// Specify what to save.
+save VDD:p
+save CK
+save RE
+save WE
+save A* depth=1
+save RD* depth=1
+save X.nWD* depth=2
+save X.nS* depth=2
+save X.nRA* depth=2
+save X.nRCK* depth=2
+save X.nWCK* depth=2
