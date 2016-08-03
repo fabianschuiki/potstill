@@ -1,5 +1,7 @@
 psf
+*.psf
 *.ahdlSimDB
 *.out
 *.fc
 *.ic
+*.srf

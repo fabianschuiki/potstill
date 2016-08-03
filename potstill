@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # Copyright (c) 2016 Fabian Schuiki
 
-import sys
+import sys, os
 import math
 import argparse
 import yaml
@@ -208,7 +208,7 @@ def makeNodeset(prefix, num_addr, num_bits):
 	# Write data and read address registers.
 	for i in range(num_addr):
 		makeNodesetForREG(prefix+".XRAREG%d" % i, 0)
-	for i in range(2**num_addr):
+	for i in range(num_bits):
 		makeNodesetForREG(prefix+".XWDREG%d" % i, 0)
 
 	# Memory columns.
@@ -391,108 +391,6 @@ def mainLayout(argv):
 	generateLayout(int(argv[0]), int(argv[1]), argv[2])
 
 
-def makeScsForPowerChar(num_addr, num_bits):
-	VDD = 1.2
-	T = 1
-
-	cname = "PS%dX%d" % (2**num_addr, num_bits)
-	scs = list()
-	ocn = list()
-
-	ocn.append("openResults(\"./psf\")")
-	ocn.append("selectResult('tran)")
-
-	ocn.append("p = outfile(\"analysis.csv\", \"w\")")
-	ocn.append("fprintf(p, \"P_leak %g\\n\", integ(-IT(\"VDD:p\") 0n 1n) / 1n * 1.2)")
-	ocn.append("fprintf(p, \"E_idle_rise %g\\n\", integ(-IT(\"VDD:p\") 1n 2n) * 1.2)")
-	ocn.append("fprintf(p, \"E_idle_fall %g\\n\", integ(-IT(\"VDD:p\") 2n 3n) * 1.2)")
-
-
-	scs.append("// Automatically generated SPECTRE input file.")
-	scs.append("// %s" % cname)
-	scs.append("include \"%s/sim/preamble.scs\"" % BASE)
-	scs.append("include \"%s.cir\"" % cname)
-
-	scs.append("X (CK RE %s %s WE %s %s VDD 0) %s" % (
-		" ".join(["RA%d" % i for i in range(num_addr)]),
-		" ".join(["RD%d" % i for i in range(num_bits)]),
-		" ".join(["WA%d" % i for i in range(num_addr)]),
-		" ".join(["WD%d" % i for i in range(num_bits)]),
-		cname
-	))
-
-	scs.append("parameters tslew=30p")
-	scs.append("VDD (VDD 0) vsource type=dc dc=%g" % VDD)
-	scs.append("VCK (CK 0) vsource type=pulse val0=0 val1=%g delay=%gn width=%gn-tslew period=%gn rise=tslew fall=tslew" % (VDD, T, T, 3*T))
-
-	Tswp = (2**num_addr) * 3
-	Ts_rd = 3
-	Ts_wr = Ts_rd + Tswp
-	Ts_rw = Ts_wr + Tswp
-	Ts_done = Ts_rw + Tswp
-
-	scs.append("VRE (RE 0) vsource type=pulse val0=0 val1=%g delay=%gn width=%gn-tslew period=%gn rise=tslew fall=tslew" % (
-		VDD, Ts_rd*T, Tswp*T, 2*Tswp*T
-	))
-	scs.append("VWE (WE 0) vsource type=pulse val0=0 val1=%g delay=%gn width=%gn-tslew rise=tslew fall=tslew" % (
-		VDD, Ts_wr*T, 2*Tswp*T
-	))
-
-	for i in range(num_addr):
-		scs.append("VWA%d (WA%d 0) vsource type=pulse val0=0 val1=%g delay=%gn width=%gn-tslew period=%gn rise=tslew fall=tslew" % (
-			i, i, VDD,
-			(Ts_rd + (2**i)*3)*T,
-			(2**i*3)*T,
-			(2**i*6)*T
-		))
-
-	for p in [
-			("read_rise",  0, 1), ("read_fall",  0, 2),
-			("write_rise", 1, 1), ("write_fall", 1, 2),
-			("rw_rise",    2, 1), ("rw_fall",    2, 2),
-		]:
-		ocn.append("fprintf(p, \"E_%s %%g\\n\", (%s) / %d * 1.2)" % (
-			p[0],
-			" + ".join(["integ(-IT(\"VDD:p\") %gn %gn)" % (
-				((i+1)*3 + p[1]*Tswp + p[2]+0)*T,
-				((i+1)*3 + p[1]*Tswp + p[2]+1)*T
-			) for i in range(2**num_addr)]),
-			2**num_addr
-		))
-
-	# ocn.append("fprintf(p, \"E_read_rise %%g\\n\", (%s) / %d * 1.2)" % (
-	# 	" + ".join(["integ(-IT(\"VDD:p\") %gn %gn)" % (((i+1)*3 + 1)*T, ((i+1)*3 + 2)*T) for i in range(2**num_addr)]),
-	# 	2**num_addr
-	# ))
-	# ocn.append("fprintf(p, \"E_read_fall %%g\\n\", (%s) / %d * 1.2)" % (
-	# 	" + ".join(["integ(-IT(\"VDD:p\") %gn %gn)" % (((i+1)*3 + 2)*T, ((i+1)*3 + 3)*T) for i in range(2**num_addr)]),
-	# 	2**num_addr
-	# ))
-
-	for i in range(num_addr):
-		scs.append("VRA%d (RA%d 0) vsource type=dc dc=0" % (i,i))
-	for i in range(num_bits):
-		scs.append("VWD%d (WD%d 0) vsource type=dc dc=0" % (i,i))
-
-	# Specify the transient analysis to perform.
-	scs.append("pwr tran stop=%gn errpreset=conservative write=\"spectre.ic\" writefinal=\"spectre.fc\" readns=\"%s.ns\"" % ((Ts_done+1)*T, cname))
-
-	# Specify what to save.
-	scs.append("save VDD:p")
-	scs.append("save CK RE WE")
-	scs.append("save RA* depth=1")
-	scs.append("save RD* depth=1")
-	scs.append("save WA* depth=1")
-	scs.append("save WD* depth=1")
-
-	ocn.append("close(p)")
-
-	return (
-		"\n".join(scs),
-		"\n".join(ocn)
-	)
-
-
 def mainChar(argv):
 	(outScs, outOcn) = makeScsForPowerChar(int(argv[0]), int(argv[1]))
 	with open(argv[2]+".scs", "w") as f:
@@ -514,10 +412,15 @@ def main(argv):
 		sys.exit(1)
 	mainName = "main" + argv[0].capitalize()
 	if mainName not in globals():
-		sys.stderr.write("Unknown command \"%s\"\n" % argv[0])
-		printUsage()
-		sys.exit(1)
-	globals()[mainName](argv[1:])
+		cmd = "%s/bin/%s" % (BASE, argv[0])
+		if os.path.exists(cmd):
+			sys.exit(subprocess.call([cmd] + argv[1:]))
+		else:
+			sys.stderr.write("Unknown command \"%s\"\n" % argv[0])
+			printUsage()
+			sys.exit(1)
+	else:
+		globals()[mainName](argv[1:])
 
 if __name__ == "__main__":
 	main(sys.argv[1:])

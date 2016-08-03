@@ -1,0 +1,13 @@
+num_addr,5
+num_bits,32
+P_leak,6.50357e-07
+E_idle_rise,6.65771e-15
+E_idle_fall,7.50432e-15
+E_read_rise,1.4184e-14
+E_read_fall,1.52527e-14
+E_write_rise,8.78288e-14
+E_write_fall,8.00051e-14
+E_rw_rise,8.59198e-14
+E_rw_fall,8.65859e-14
+t_wr,6.27255e-10
+t_rd,7.94035e-10

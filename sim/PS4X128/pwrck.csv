@@ -1,0 +1,9 @@
+P_leak,5.13066e-07
+E_idle_rise,3.75257e-15
+E_idle_fall,4.76443e-15
+E_read_rise,8.52127e-15
+E_read_fall,9.66048e-15
+E_write_rise,5.16594e-13
+E_write_fall,1.96342e-13
+E_rw_rise,1.64617e-13
+E_rw_fall,1.84948e-13

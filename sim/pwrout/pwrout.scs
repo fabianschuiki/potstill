@@ -1,0 +1,23 @@
+// /home/msc16f2/potstill/templates/..
+include "/home/msc16f2/potstill/templates/../sim/preamble.scs"
+include "PS4X8.cir"
+X (CK RE RA RA RD0 RD1 RD2 RD3 RD4 RD5 RD6 RD7 WE VDD VDD VDD VDD VDD VDD VDD VDD VDD VDD VDD 0) PS4X8
+C0 (RD0 0) capacitor c=cload
+C1 (RD1 0) capacitor c=cload
+C2 (RD2 0) capacitor c=cload
+C3 (RD3 0) capacitor c=cload
+C4 (RD4 0) capacitor c=cload
+C5 (RD5 0) capacitor c=cload
+C6 (RD6 0) capacitor c=cload
+C7 (RD7 0) capacitor c=cload
+parameters tslew=30p cload=1e-20
+VDD (VDD 0) vsource type=dc dc=1.2
+VCK (CK, 0) vsource type=pulse val0=0 val1=1.2 delay=1n width=1n-tslew period=3n rise=tslew fall=tslew
+VWE (WE, 0) vsource type=pulse val0=0 val1=1.2 delay=3n width=3n-tslew rise=tslew fall=tslew
+VRE (RE, 0) vsource type=pulse val0=1.2 val1=0 delay=3n width=3n-tslew rise=tslew fall=tslew
+VRA (RA, 0) vsource type=pulse val0=0 val1=1.2 delay=6n width=3n-tslew rise=tslew fall=tslew
+tran tran stop=12n errpreset=conservative write="spectre.ic" readns="PS4X8.ns"
+save VDD:p
+save CK RE WE
+save RD* depth=1
+save X:currents

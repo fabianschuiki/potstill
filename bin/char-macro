@@ -1,0 +1,56 @@
+#!/usr/bin/env python3
+# Copyright (c) 2016 Fabian Schuiki
+# This script fully characterizes a single memory macro.
+
+import sys, subprocess
+BASE = sys.path[0]+"/.."
+
+if len(sys.argv) != 3:
+	sys.stderr.write("usage: %s NADDR NBITS\n" % sys.argv[0])
+	sys.exit(1)
+num_addr = int(sys.argv[1])
+num_bits = int(sys.argv[2])
+cname = "PS%dX%d" % (2**num_addr, num_bits)
+sims = ["pwrck", "trdwr"]
+
+
+# Generate netlist and nodeset files for the requested macro size.
+with open("%s.cir" % cname, "w") as f:
+	subprocess.check_call(["potstill", "netlist", "TOP", str(num_addr), str(num_bits)], stdout=f)
+with open("%s.ns" % cname, "w") as f:
+	subprocess.check_call(["potstill", "nodeset", "X", str(num_addr), str(num_bits)], stdout=f)
+
+
+# Run the SPECTRE simulations.
+for s in sims:
+	# Generate simulator input files for the analysis.
+	with open("%s.scs" % s, "w") as f:
+		subprocess.check_call(["%s/templates/%s.scs.py" % (BASE, s), str(num_addr), str(num_bits)], stdout=f)
+
+	# Generate the OCEAN script to process the results.
+	with open("%s.ocn" % s, "w") as f:
+		subprocess.check_call(["%s/templates/%s.ocn.py" % (BASE, s), str(num_addr)], stdout=f)
+
+	# Run the SPECTRE simulations.
+	# subprocess.check_call(["cds_mmsim", "spectre", "%s.scs" % s, "+escchars", "+log", "%s.out" % s, "-format", "psfxl", "-raw", "%s.psf" % s, "+aps"])
+
+
+# Process results using the generated OCEAN scripts.
+with subprocess.Popen(["cds_ic6", "ocean", "-nograph"], stdin=subprocess.PIPE, universal_newlines=True) as ocean:
+	for s in sims:
+		ocean.stdin.write("load(\"%s.ocn\")\n" % s)
+	ocean.stdin.write("exit\n")
+	ocean.stdin.flush()
+	ocean.wait()
+	if ocean.returncode != 0:
+		sys.stderr.write("OCEAN script execution failed\n")
+		sys.exit(ocean.returncode)
+
+
+# Combine the results into a single file.
+with open("results.csv", "w") as o:
+	o.write("num_addr,%d\n" % num_addr)
+	o.write("num_bits,%d\n" % num_bits)
+	for s in sims:
+		with open("%s.csv" % s, "r") as i:
+			o.write(i.read())

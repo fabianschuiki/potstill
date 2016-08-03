@@ -1,8 +1,0 @@
-openResults("./psf")
-selectResult('tran)
-
-p = outfile("analysis.csv", "a")
-fprintf(p, "P_leak %g\n", integ(-IT("VDD:p") 0n 1n) / 1n * 1.2)
-fprintf(p, "E_idle_rise %g\n", integ(-IT("VDD:p") 1n 2n) * 1.2)
-fprintf(p, "E_idle_fall %g\n", integ(-IT("VDD:p") 2n 3n) * 1.2)
-close(p)

@@ -1,7 +1,7 @@
 #!/bin/bash
 set -e
 
+../../templates/trdwr.scs.py 2 8 > input.scs
 potstill netlist TOP 2 8 > PS4X8.cir
 potstill nodeset X 2 8 > PS4X8.ns
-../../templates/pwrck.scs.py 2 8 > input.scs
 cds_mmsim spectre input.scs +escchars +log spectre.out -format psfxl -raw psf +aps +lqtimeout 900 -maxw 5 -maxn 5

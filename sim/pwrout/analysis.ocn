@@ -1,0 +1,25 @@
+openResults("./pwrout.psf")
+selectResult('tran)
+p = outfile("pwrout.csv", "w")
+E_CK = integ(-IT("VDD:p") 1n 3n) * 1.2
+printf("E_CK = %g\n", E_CK)
+E_RD_rise = integ(-IT("VDD:p") 7n 9n) * 1.2 - E_CK - 5.76e-20
+E_RD_fall = integ(-IT("VDD:p") 10n 12n) * 1.2 - E_CK
+fprintf(p, "E_RD0_rise,%g\n", E_RD_rise/8)
+fprintf(p, "E_RD0_fall,%g\n", E_RD_fall/8)
+fprintf(p, "E_RD1_rise,%g\n", E_RD_rise/8)
+fprintf(p, "E_RD1_fall,%g\n", E_RD_fall/8)
+fprintf(p, "E_RD2_rise,%g\n", E_RD_rise/8)
+fprintf(p, "E_RD2_fall,%g\n", E_RD_fall/8)
+fprintf(p, "E_RD3_rise,%g\n", E_RD_rise/8)
+fprintf(p, "E_RD3_fall,%g\n", E_RD_fall/8)
+fprintf(p, "E_RD4_rise,%g\n", E_RD_rise/8)
+fprintf(p, "E_RD4_fall,%g\n", E_RD_fall/8)
+fprintf(p, "E_RD5_rise,%g\n", E_RD_rise/8)
+fprintf(p, "E_RD5_fall,%g\n", E_RD_fall/8)
+fprintf(p, "E_RD6_rise,%g\n", E_RD_rise/8)
+fprintf(p, "E_RD6_fall,%g\n", E_RD_fall/8)
+fprintf(p, "E_RD7_rise,%g\n", E_RD_rise/8)
+fprintf(p, "E_RD7_fall,%g\n", E_RD_fall/8)
+close(p)
+exit
