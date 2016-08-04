@@ -108,7 +108,9 @@ for s in ["RE", "RA", "WE", "WA", "WD"]:
 # corresponding threshold value.
 for s in ["RE", "RA", "WE", "WA", "WD"]:
 	for e in ["rise", "fall"]:
-		ocn.write("Nc_%s_%s = int(cross(Tpd_%s_%s Tpdth_%s_%s 1 \"rising\"))\n" % (s, e, s, e, s, e))
+		# Be careful to subtract 1, since the cycle count starts at 1. However,
+		# the first cycle represents tsu=tinit, not tsu=tinit+tdr.
+		ocn.write("Nc_%s_%s = int(cross(Tpd_%s_%s Tpdth_%s_%s 1 \"rising\")) - 1\n" % (s, e, s, e, s, e))
 		ocn.write("fprintf(p, \"Tsu_%s_%s,%%g\\n\", %g - Nc_%s_%s * %g)\n" % (s, e, -Tinit, s, e, Tdr))
 
 ocn.write("close(p)\n")

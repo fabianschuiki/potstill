@@ -1,0 +1,54 @@
+openResults("./tho.psf")
+selectResult('tran)
+p = outfile("tho.csv", "w")
+X_RE_rise = cross(VT("X.XRWCKG.X0.n1") 0.6 1 "falling" t "time") - 1e-09
+X_RE_fall = cross(VT("X.XRWCKG.X0.n1") 0.6 1 "rising" t "time") - 1e-09
+X_WE_rise = cross(VT("X.XRWCKG.X1.n1") 0.6 1 "falling" t "time") - 1e-09
+X_WE_fall = cross(VT("X.XRWCKG.X1.n1") 0.6 1 "rising" t "time") - 1e-09
+X_RA_rise = cross(VT("X.nRA0") 0.6 1 "rising" t "time") - 1e-09
+X_RA_fall = cross(VT("X.nRA0") 0.6 1 "falling" t "time") - 1e-09
+X_WA_rise = cross(VT("X.XAD.XCKG0.n1") 0.6 1 "rising" t "time") - 1e-09
+X_WA_fall = cross(VT("X.XAD.XCKG0.n1") 0.6 1 "falling" t "time") - 1e-09
+X_WD_rise = cross(VT("X.nWD0") 0.6 1 "rising" t "time") - 1e-09
+X_WD_fall = cross(VT("X.nWD0") 0.6 1 "falling" t "time") - 1e-09
+Tpd_RA_rise = (X_RA_rise - int(X_RA_rise / 1.6e-08) * 1.6e-08 - 4e-09)
+Tpd_RA_fall = (X_RA_fall - int(X_RA_fall / 1.6e-08) * 1.6e-08 - 8e-09)
+Tpd_WD_rise = (X_WD_rise - int(X_WD_rise / 1.6e-08) * 1.6e-08 - 4e-09)
+Tpd_WD_fall = (X_WD_fall - int(X_WD_fall / 1.6e-08) * 1.6e-08 - 8e-09)
+Tpd_WA_rise = (X_WA_rise - int(X_WA_rise / 1.6e-08) * 1.6e-08 - 4.06415e-09)
+Tpd_WA_fall = (X_WA_fall - int(X_WA_fall / 1.6e-08) * 1.6e-08 - 8.01567e-09)
+Tpd_RE_rise = (X_RE_rise - int(X_RE_rise / 1.6e-08) * 1.6e-08 - -3.58486e-11)
+Tpd_RE_fall = (X_RE_fall - int(X_RE_fall / 1.6e-08) * 1.6e-08 - 1.19369e-08)
+Tpd_WE_rise = (X_WE_rise - int(X_WE_rise / 1.6e-08) * 1.6e-08 - -3.58486e-11)
+Tpd_WE_fall = (X_WE_fall - int(X_WE_fall / 1.6e-08) * 1.6e-08 - 1.19369e-08)
+Tpdth_RE_rise = value(Tpd_RE_rise 1.7e-08) * 1.050000
+Tpdth_RE_fall = value(Tpd_RE_fall 1.7e-08) * 1.050000
+Tpdth_RA_rise = value(Tpd_RA_rise 1.7e-08) * 1.050000
+Tpdth_RA_fall = value(Tpd_RA_fall 1.7e-08) * 1.050000
+Tpdth_WE_rise = value(Tpd_WE_rise 1.7e-08) * 1.050000
+Tpdth_WE_fall = value(Tpd_WE_fall 1.7e-08) * 1.050000
+Tpdth_WA_rise = value(Tpd_WA_rise 1.7e-08) * 1.050000
+Tpdth_WA_fall = value(Tpd_WA_fall 1.7e-08) * 1.050000
+Tpdth_WD_rise = value(Tpd_WD_rise 1.7e-08) * 1.050000
+Tpdth_WD_fall = value(Tpd_WD_fall 1.7e-08) * 1.050000
+Nc_RE_rise = int(cross(Tpd_RE_rise Tpdth_RE_rise 1 "rising") / 1.6e-08)
+fprintf(p, "Tho_RE_rise,%g\n", 4e-10 + Nc_RE_rise * (-5.55556e-11))
+Nc_RE_fall = int(cross(Tpd_RE_fall Tpdth_RE_fall 1 "rising") / 1.6e-08)
+fprintf(p, "Tho_RE_fall,%g\n", 4e-10 + Nc_RE_fall * (-5.55556e-11))
+Nc_RA_rise = int(cross(Tpd_RA_rise Tpdth_RA_rise 1 "rising") / 1.6e-08)
+fprintf(p, "Tho_RA_rise,%g\n", 4e-10 + Nc_RA_rise * (-5.55556e-11))
+Nc_RA_fall = int(cross(Tpd_RA_fall Tpdth_RA_fall 1 "rising") / 1.6e-08)
+fprintf(p, "Tho_RA_fall,%g\n", 4e-10 + Nc_RA_fall * (-5.55556e-11))
+Nc_WE_rise = int(cross(Tpd_WE_rise Tpdth_WE_rise 1 "rising") / 1.6e-08)
+fprintf(p, "Tho_WE_rise,%g\n", 4e-10 + Nc_WE_rise * (-5.55556e-11))
+Nc_WE_fall = int(cross(Tpd_WE_fall Tpdth_WE_fall 1 "rising") / 1.6e-08)
+fprintf(p, "Tho_WE_fall,%g\n", 4e-10 + Nc_WE_fall * (-5.55556e-11))
+Nc_WA_rise = int(cross(Tpd_WA_rise Tpdth_WA_rise 1 "rising") / 1.6e-08)
+fprintf(p, "Tho_WA_rise,%g\n", 4e-10 + Nc_WA_rise * (-5.55556e-11))
+Nc_WA_fall = int(cross(Tpd_WA_fall Tpdth_WA_fall 1 "rising") / 1.6e-08)
+fprintf(p, "Tho_WA_fall,%g\n", 4e-10 + Nc_WA_fall * (-5.55556e-11))
+Nc_WD_rise = int(cross(Tpd_WD_rise Tpdth_WD_rise 1 "rising") / 1.6e-08)
+fprintf(p, "Tho_WD_rise,%g\n", 4e-10 + Nc_WD_rise * (-5.55556e-11))
+Nc_WD_fall = int(cross(Tpd_WD_fall Tpdth_WD_fall 1 "rising") / 1.6e-08)
+fprintf(p, "Tho_WD_fall,%g\n", 4e-10 + Nc_WD_fall * (-5.55556e-11))
+close(p)
