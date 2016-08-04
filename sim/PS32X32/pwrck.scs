@@ -1,23 +1,17 @@
-// Automatically generated SPECTRE input file.
 // PS32X32
 include "/home/msc16f2/potstill/templates/../sim/preamble.scs"
 include "PS32X32.cir"
-X (CK RE RA0 RA1 RA2 RA3 RA4 RD0 RD1 RD2 RD3 RD4 RD5 RD6 RD7 RD8 RD9 RD10 RD11 RD12 RD13 RD14 RD15 RD16 RD17 RD18 RD19 RD20 RD21 RD22 RD23 RD24 RD25 RD26 RD27 RD28 RD29 RD30 RD31 WE WA0 WA1 WA2 WA3 WA4 WD0 WD1 WD2 WD3 WD4 WD5 WD6 WD7 WD8 WD9 WD10 WD11 WD12 WD13 WD14 WD15 WD16 WD17 WD18 WD19 WD20 WD21 WD22 WD23 WD24 WD25 WD26 WD27 WD28 WD29 WD30 WD31 VDD 0) PS32X32
+X (CK RE A0 A1 A2 A3 A4 RD0 RD1 RD2 RD3 RD4 RD5 RD6 RD7 RD8 RD9 RD10 RD11 RD12 RD13 RD14 RD15 RD16 RD17 RD18 RD19 RD20 RD21 RD22 RD23 RD24 RD25 RD26 RD27 RD28 RD29 RD30 RD31 WE A0 A1 A2 A3 A4 WD0 WD1 WD2 WD3 WD4 WD5 WD6 WD7 WD8 WD9 WD10 WD11 WD12 WD13 WD14 WD15 WD16 WD17 WD18 WD19 WD20 WD21 WD22 WD23 WD24 WD25 WD26 WD27 WD28 WD29 WD30 WD31 VDD 0) PS32X32
 parameters tslew=30p
 VDD (VDD 0) vsource type=dc dc=1.2
 VCK (CK 0) vsource type=pulse val0=0 val1=1.2 delay=5n width=5n-tslew period=15n rise=tslew fall=tslew
 VRE (RE 0) vsource type=pulse val0=0 val1=1.2 delay=15n width=480n-tslew period=960n rise=tslew fall=tslew
 VWE (WE 0) vsource type=pulse val0=0 val1=1.2 delay=495n width=960n-tslew rise=tslew fall=tslew
-VWA0 (WA0 0) vsource type=pulse val0=0 val1=1.2 delay=30n width=15n-tslew period=30n rise=tslew fall=tslew
-VWA1 (WA1 0) vsource type=pulse val0=0 val1=1.2 delay=45n width=30n-tslew period=60n rise=tslew fall=tslew
-VWA2 (WA2 0) vsource type=pulse val0=0 val1=1.2 delay=75n width=60n-tslew period=120n rise=tslew fall=tslew
-VWA3 (WA3 0) vsource type=pulse val0=0 val1=1.2 delay=135n width=120n-tslew period=240n rise=tslew fall=tslew
-VWA4 (WA4 0) vsource type=pulse val0=0 val1=1.2 delay=255n width=240n-tslew period=480n rise=tslew fall=tslew
-VRA0 (RA0 0) vsource type=dc dc=0
-VRA1 (RA1 0) vsource type=dc dc=0
-VRA2 (RA2 0) vsource type=dc dc=0
-VRA3 (RA3 0) vsource type=dc dc=0
-VRA4 (RA4 0) vsource type=dc dc=0
+VA0 (A0 0) vsource type=pulse val0=0 val1=1.2 delay=30n width=15n-tslew period=30n rise=tslew fall=tslew
+VA1 (A1 0) vsource type=pulse val0=0 val1=1.2 delay=45n width=30n-tslew period=60n rise=tslew fall=tslew
+VA2 (A2 0) vsource type=pulse val0=0 val1=1.2 delay=75n width=60n-tslew period=120n rise=tslew fall=tslew
+VA3 (A3 0) vsource type=pulse val0=0 val1=1.2 delay=135n width=120n-tslew period=240n rise=tslew fall=tslew
+VA4 (A4 0) vsource type=pulse val0=0 val1=1.2 delay=255n width=240n-tslew period=480n rise=tslew fall=tslew
 VWD0 (WD0 0) vsource type=dc dc=0
 VWD1 (WD1 0) vsource type=dc dc=0
 VWD2 (WD2 0) vsource type=dc dc=0
@@ -50,10 +44,9 @@ VWD28 (WD28 0) vsource type=dc dc=0
 VWD29 (WD29 0) vsource type=dc dc=0
 VWD30 (WD30 0) vsource type=dc dc=0
 VWD31 (WD31 0) vsource type=dc dc=0
-tran tran stop=1460n errpreset=liberal readns="PS32X32.ns"
+tran tran stop=1460n errpreset=conservative readns="PS32X32.ns"
 save VDD:p
 save CK RE WE
-save RA* depth=1
+save A* depth=1
 save RD* depth=1
-save WA* depth=1
 save WD* depth=1

@@ -17,7 +17,7 @@ outname = sys.argv[3]
 cname = "PS%dX%d" % (2**num_addr, num_bits)
 VDD = 1.2
 T = 1
-Cload = 10e-21
+Cload = 10e-15
 
 scs = open("%s.scs" % outname, "w")
 ocn = open("%s.ocn" % outname, "w")

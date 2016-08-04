@@ -19,9 +19,9 @@ print("include \"%s/sim/preamble.scs\"" % BASE)
 print("include \"%s.cir\"" % cname)
 
 print("X (CK RE %s %s WE %s %s VDD 0) %s" % (
-	" ".join(["RA%d" % i for i in range(num_addr)]),
+	" ".join(["A%d" % i for i in range(num_addr)]),
 	" ".join(["RD%d" % i for i in range(num_bits)]),
-	" ".join(["WA%d" % i for i in range(num_addr)]),
+	" ".join(["A%d" % i for i in range(num_addr)]),
 	" ".join(["WD%d" % i for i in range(num_bits)]),
 	cname
 ))
@@ -44,25 +44,22 @@ print("VWE (WE 0) vsource type=pulse val0=0 val1=%g delay=%gn width=%gn-tslew ri
 ))
 
 for i in range(num_addr):
-	print("VWA%d (WA%d 0) vsource type=pulse val0=0 val1=%g delay=%gn width=%gn-tslew period=%gn rise=tslew fall=tslew" % (
+	print("VA%d (A%d 0) vsource type=pulse val0=0 val1=%g delay=%gn width=%gn-tslew period=%gn rise=tslew fall=tslew" % (
 		i, i, VDD,
 		(Ts_rd + (2**i)*3)*T,
 		(2**i*3)*T,
 		(2**i*6)*T
 	))
 
-for i in range(num_addr):
-	print("VRA%d (RA%d 0) vsource type=dc dc=0" % (i,i))
 for i in range(num_bits):
 	print("VWD%d (WD%d 0) vsource type=dc dc=0" % (i,i))
 
 # Specify the transient analysis to perform.
-print("tran tran stop=%gn errpreset=liberal readns=\"%s.ns\"" % ((Ts_done+1)*T, cname))
+print("tran tran stop=%gn errpreset=conservative readns=\"%s.ns\"" % ((Ts_done+1)*T, cname))
 
 # Specify what to save.
 print("save VDD:p")
 print("save CK RE WE")
-print("save RA* depth=1")
+print("save A* depth=1")
 print("save RD* depth=1")
-print("save WA* depth=1")
 print("save WD* depth=1")

@@ -1,17 +1,14 @@
-// Automatically generated SPECTRE input file.
 // PS4X8
 include "/home/msc16f2/potstill/templates/../sim/preamble.scs"
 include "PS4X8.cir"
-X (CK RE RA0 RA1 RD0 RD1 RD2 RD3 RD4 RD5 RD6 RD7 WE WA0 WA1 WD0 WD1 WD2 WD3 WD4 WD5 WD6 WD7 VDD 0) PS4X8
+X (CK RE A0 A1 RD0 RD1 RD2 RD3 RD4 RD5 RD6 RD7 WE A0 A1 WD0 WD1 WD2 WD3 WD4 WD5 WD6 WD7 VDD 0) PS4X8
 parameters tslew=30p
 VDD (VDD 0) vsource type=dc dc=1.2
-VCK (CK 0) vsource type=pulse val0=0 val1=1.2 delay=1n width=1n-tslew period=3n rise=tslew fall=tslew
-VRE (RE 0) vsource type=pulse val0=0 val1=1.2 delay=3n width=12n-tslew period=24n rise=tslew fall=tslew
-VWE (WE 0) vsource type=pulse val0=0 val1=1.2 delay=15n width=24n-tslew rise=tslew fall=tslew
-VWA0 (WA0 0) vsource type=pulse val0=0 val1=1.2 delay=6n width=3n-tslew period=6n rise=tslew fall=tslew
-VWA1 (WA1 0) vsource type=pulse val0=0 val1=1.2 delay=9n width=6n-tslew period=12n rise=tslew fall=tslew
-VRA0 (RA0 0) vsource type=dc dc=0
-VRA1 (RA1 0) vsource type=dc dc=0
+VCK (CK 0) vsource type=pulse val0=0 val1=1.2 delay=5n width=5n-tslew period=15n rise=tslew fall=tslew
+VRE (RE 0) vsource type=pulse val0=0 val1=1.2 delay=15n width=60n-tslew period=120n rise=tslew fall=tslew
+VWE (WE 0) vsource type=pulse val0=0 val1=1.2 delay=75n width=120n-tslew rise=tslew fall=tslew
+VA0 (A0 0) vsource type=pulse val0=0 val1=1.2 delay=30n width=15n-tslew period=30n rise=tslew fall=tslew
+VA1 (A1 0) vsource type=pulse val0=0 val1=1.2 delay=45n width=30n-tslew period=60n rise=tslew fall=tslew
 VWD0 (WD0 0) vsource type=dc dc=0
 VWD1 (WD1 0) vsource type=dc dc=0
 VWD2 (WD2 0) vsource type=dc dc=0
@@ -20,10 +17,9 @@ VWD4 (WD4 0) vsource type=dc dc=0
 VWD5 (WD5 0) vsource type=dc dc=0
 VWD6 (WD6 0) vsource type=dc dc=0
 VWD7 (WD7 0) vsource type=dc dc=0
-tran tran stop=40n errpreset=conservative readns="PS4X8.ns"
+tran tran stop=200n errpreset=conservative readns="PS4X8.ns"
 save VDD:p
 save CK RE WE
-save RA* depth=1
+save A* depth=1
 save RD* depth=1
-save WA* depth=1
 save WD* depth=1

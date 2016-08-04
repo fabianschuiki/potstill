@@ -13,6 +13,7 @@ num_bits = int(sys.argv[2])
 cname = "PS%dX%d" % (2**num_addr, num_bits)
 VDD = 1.2
 T = 1
+Cload = 10e-15
 
 print("// %s" % BASE)
 print("include \"%s/sim/preamble.scs\"" % BASE)
@@ -25,8 +26,10 @@ print("X (CK RE %s %s WE %s %s VDD 0) %s" % (
 	" ".join(["VDD" for i in range(num_bits)]),
 	cname
 ))
+for i in range(num_bits):
+	print("C%d (RD%d 0) capacitor c=cload\n" % (i, i))
 
-print("parameters tslew=30p")
+print("parameters tslew=30p cload=%g\n" % Cload)
 print("VDD (VDD 0) vsource type=dc dc=%g" % VDD)
 print("VCK (CK 0) vsource type=pulse val0=0 val1=%g delay=%gn width=%gn-tslew period=%gn rise=tslew fall=tslew" % (VDD, 1*T, 1*T, 3*T))
 print("VWE (WE 0) vsource type=pulse val0=%g val1=0 delay=%gn rise=tslew fall=tslew" % (VDD, 3*T))

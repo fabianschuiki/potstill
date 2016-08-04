@@ -6,214 +6,12 @@ import math
 import argparse
 import yaml
 import subprocess
+import src.macro
+import src.pwrck
+from src import nodeset
+from src import netlist
 
 BASE = sys.path[0]
-
-
-def makeNetlist(size, bits):
-	lines = list()
-	lines.append(".SUBCKT PS%dX%d CK RE %s %s WE %s %s VDD VSS" % (
-		2**size, bits,
-		" ".join(["RA%d" % i for i in range(size)]),
-		" ".join(["RD%d" % i for i in range(bits)]),
-		" ".join(["WA%d" % i for i in range(size)]),
-		" ".join(["WD%d" % i for i in range(bits)]),
-	))
-
-	netsRA = " ".join(["nRA%d" % i for i in range(size)])
-	netsWA = " ".join(["WA%d" % i for i in range(size)])
-	netsSGPGN = " ".join(["nS%d nGP%d nGN%d" % (i,i,i) for i in range(2**size)])
-
-	# Add the root clock gates.
-	lines.append("XRWCKG RE WE CK nRCKP nRCKN nWCKP nWCKN VDD VSS PSRWCKG")
-
-	# # Add the clock buffer that provides the root CKP and CKN signals.
-	# lines.append("XI0 CK nCKN VDD VSS INV PARAMS: wp=630e-9 wn=260e-9")
-	# lines.append("XI1 nCKN nCKP VDD VSS INV PARAMS: wp=630e-9 wn=260e-9")
-
-	# # Instantiate the two global clock gates.
-	# lines.append("XWCKG WE nCKP nCKN nWCKP nWCKN VDD VSS CKG")
-	# lines.append("XRCKG RE nCKP nCKN nRCKP nRCKN VDD VSS CKG")
-
-	# Instantiate the address decoder.
-	lines.append("XAD nWCKP nWCKN %s %s %s VDD VSS PSAD%d" % (
-		netsRA, netsWA, netsSGPGN, 2**size
-	))
-
-	# Instantiate the write data registers.
-	for i in range(bits):
-		lines.append("XWDREG%d WD%d nWCKP nWCKN nWD%d iw%d VDD VSS PSREG" % (
-			i, i, i, i
-		))
-
-	# Instantiate the read address registers.
-	for i in range(size):
-		lines.append("XRAREG%d RA%d nRCKP nRCKN nRA%d ir%d VDD VSS PSREG" % (
-			i, i, i, i
-		))
-
-	# Instantiate the bit arrays.
-	for i in range(bits):
-		lines.append("XBA%d nWD%d %s RD%d VDD VSS PSBA%d" % (
-			i, i, netsSGPGN, i, 2**size
-		))
-
-	lines.append(".ENDS")
-
-	with open("%s/umc65/netlists/components.cir" % BASE, "r") as f:
-		netlistPrefix = f.read()
-
-	return "\n\n".join([
-		netlistPrefix,
-		makeNetlistForAD(size),
-		makeNetlistForBA(size),
-		"\n".join(lines)
-	])
-
-
-# Generate the netlist for a bit array.
-def makeNetlistForBA(size):
-	lines = list()
-	lines.append(".SUBCKT PSBA%d D %s Q VDD VSS" % (
-		2**size,
-		" ".join(["S%d GP%d GN%d" % (i,i,i) for i in range(2**size)])
-	))
-	for i in range(2**size):
-		lines.append("X%d D GP%d GN%d S%d nL0Q%d VDD VSS PSBA1" % (
-			i, i, i, i, i
-		))
-	if size % 2 == 0:
-		outName = "nQ"
-		lines.append("XINV nQ Q VDD VSS PSRMINV")
-	else:
-		outName = "nQ"
-		lines.append("XBUF nQ Q VDD VSS PSRMBUF")
-	for i in range(size):
-		for n in range(2**(size-i-1)):
-			lines.append("XL%dQ%d nL%dQ%d nL%dQ%d %s VDD VSS %s" % (
-				i+1, n,
-				i, n*2+0,
-				i, n*2+1,
-				("nL%dQ%d" % (i+1, n)) if i < size-1 else outName,
-				"PSRMND" if i % 2 == 0 else "PSRMNR"
-			))
-	lines.append(".ENDS")
-	return "\n".join(lines)
-
-
-# Generate the netlist for an address decoder.
-def makeNetlistForAD(size):
-	lines = list()
-	lines.append(".SUBCKT PSAD%d CKP CKN %s %s %s VDD VSS" % (2**size,
-		" ".join(["RA%d" % i for i in range(size)]),
-		" ".join(["WA%d" % i for i in range(size)]),
-		" ".join(["S%d GP%d GN%d" % (i,i,i) for i in range(2**size)])
-	))
-	for i in range(2**size):
-		lines.append("XCKG%d nWE%d CKP CKN GP%d GN%d VDD VSS PSADCKG " % (
-			i, i, i, i,
-		))
-
-	# if size > 3:
-	# 	radOutName = "S%d"
-	# 	wadOutName = "nWEB%d"
-	# 	invIn = "nWEB%d"
-	# 	invOut = "nWE%d"
-	# else:
-	# 	radOutName = "nRE%d"
-	# 	wadOutName = "nWE%d"
-	# 	invIn = "nRE%d"
-	# 	invOut = "S%d"
-
-	lines.append("XRAD %s %s VDD VSS PSADOH%d" % (
-		" ".join(["RA%d" % i for i in range(size)]),
-		" ".join(["S%d" % i for i in range(2**size)]),
-		2**size
-	))
-	lines.append("XWAD %s %s VDD VSS PSADOH%d" % (
-		" ".join(["WA%d" % i for i in range(size)]),
-		" ".join(["nWE%d" % i for i in range(2**size)]),
-		2**size
-	))
-
-	# for i in range(2**size):
-	# 	lines.append("XINV%d %s %s VDD VSS PSADINV" % (i, invIn % i, invOut % i))
-
-	lines.append(".ENDS")
-	return makeNetlistForADOH(size) + "\n\n" + "\n".join(lines)
-
-
-# Generate the netlist for the one-hot decoder used in address decoders.
-def makeNetlistForADOH(size):
-	lines = list()
-	with open("%s/umc65/netlists/PSADOH%dR.cir" % (BASE, 2**size), "r") as f:
-		lines.append(f.read())
-
-	lines.append(".SUBCKT PSADOH%d %s %s VDD VSS" % (2**size,
-		" ".join(["A%d" % i for i in range(size)]),
-		" ".join(["Z%d" % i for i in range(2**size)])
-	))
-	N = 0
-	for i in range(size):
-		lines.append("XI%d A%d N%d VDD VSS PSADINV" % (N, i, i))
-		N += 1
-	N = 0
-	actHiInputs = (size > 3)
-	for i in range(2**size):
-		lines.append("X%d %s Z%d VDD VSS PSADOH%dR" % (N,
-			" ".join([("A%d" if (i if actHiInputs else ~i) & (1 << n) else "N%d") % n for n in range(size)]),
-			i,
-			2**size
-		))
-		N += 1
-	lines.append(".ENDS")
-	return "\n".join(lines)
-
-
-def makeNodesetForADCKG(prefix, value):
-	print(prefix+".X1.n1 %g" % value)
-
-
-def makeNodesetForAD(prefix, num_addr):
-	for i in range(2**num_addr):
-		makeNodesetForADCKG(prefix+".XCKG%d" % i, 0)
-
-
-def makeNodesetForREGLA(prefix, value):
-	print(prefix+".n1 %g" % value)
-
-
-def makeNodesetForREG(prefix, value):
-	makeNodesetForREGLA(prefix+".XI0", value)
-	makeNodesetForREGLA(prefix+".XI1", value)
-
-
-def makeNodesetForBA1(prefix, value):
-	print(prefix+".nFB", 1.2-value)
-
-
-def makeNodesetForBT(prefix, num_addr, value):
-	for i in range(2**num_addr):
-		makeNodesetForBA1(prefix+".X%d" % i, value)
-
-
-def makeNodeset(prefix, num_addr, num_bits):
-	# Global clock gate.
-	makeNodesetForADCKG(prefix+".XRWCKG.X0", 0)
-	makeNodesetForADCKG(prefix+".XRWCKG.X1", 0)
-
-	# Address decoder.
-	makeNodesetForAD(prefix+".XAD", num_addr)
-
-	# Write data and read address registers.
-	for i in range(num_addr):
-		makeNodesetForREG(prefix+".XRAREG%d" % i, 0)
-	for i in range(num_bits):
-		makeNodesetForREG(prefix+".XWDREG%d" % i, 0)
-
-	# Memory columns.
-	for i in range(num_bits):
-		makeNodesetForBT(prefix+".XBA%d" % i, num_addr, 0)
 
 
 def generateLayout(size, bits, outfile):
@@ -367,21 +165,21 @@ def mainNetlist(argv):
 			sys.stderr.write("Top-level cell requires number of address lines and number of bits.\n")
 			printUsage()
 			sys.exit(1)
-		print(makeNetlist(int(argv[1]), int(argv[2])))
+		print(netlist.generate(int(argv[1]), int(argv[2])))
 	else:
-		funcName = "makeNetlistFor" + argv[0].upper()
-		if funcName not in globals():
+		funcName = "generate" + argv[0].upper()
+		if not hasattr(netlist, funcName):
 			sys.stderr.write("Unknown component \"%s\"\n" % argv[0])
 			printUsage()
 			sys.exit(1)
-		print(globals()[funcName](int(argv[1])))
+		print(getattr(netlist, funcName)(int(argv[1])))
 
 
 def mainNodeset(argv):
 	if len(argv) < 3:
 		printUsage()
 		sys.exit(1)
-	makeNodeset(argv[0], int(argv[1]), int(argv[2]))
+	nodeset.generate(argv[0], int(argv[1]), int(argv[2]))
 
 
 def mainLayout(argv):
@@ -392,12 +190,67 @@ def mainLayout(argv):
 
 
 def mainChar(argv):
-	(outScs, outOcn) = makeScsForPowerChar(int(argv[0]), int(argv[1]))
-	with open(argv[2]+".scs", "w") as f:
-		f.write(outScs)
-	with open(argv[2]+".ocn", "w") as f:
-		f.write(outOcn)
+	if len(argv) < 2 or argv[0] == "-h" or argv[0] == "--help":
+		printCharUsage()
+		sys.exit(1)
 
+	num_addr = int(argv[0])
+	num_bits = int(argv[1])
+	macro = src.macro.Macro(num_addr, num_bits)
+
+	mainCharMacro(macro, argv[2:])
+
+
+def mainCharMacro(macro, argv):
+	if len(argv) < 1:
+		printCharUsage()
+		sys.exit(1)
+	mainName = "mainChar" + argv[0].capitalize()
+	if mainName not in globals():
+		sys.stderr.write("Unknown characterization command \"%s\"\n\n" % argv[0])
+		printCharUsage()
+		sys.exit(1)
+	else:
+		globals()[mainName](macro, argv[1:])
+
+
+def mainCharPwrck(macro, argv):
+	parser = argparse.ArgumentParser(description="Perform internal power characterization of the clock pin.")
+	parser.add_argument("tslew", metavar="TSLEW", type=float, nargs="+", help="transition time of the clock input signal")
+	parser.add_argument("-r", "--run", action="store_true")
+	parser.add_argument("-i", "--inputs", action="store_true", dest="generateInputs", help="generate SPECTRE and OCEAN input files")
+	parser.add_argument("-s", "--simulate", action="store_true", dest="runSpectre", help="run SPECTRE simulation")
+	parser.add_argument("-a", "--analyze", action="store_true", dest="runOcean", help="run OCEAN analysis")
+	parser.add_argument("--dump-spectre", action="store_true", dest="dumpSpectreInput")
+	parser.add_argument("--dump-ocean", action="store_true", dest="dumpOceanInput")
+	parser.add_argument("--vdd", metavar="VDD", type=float, default=1.2, help="supply voltage")
+	args = parser.parse_args(argv)
+	print(args)
+
+	if len(args.tslew) == 1:
+		pwrck = src.pwrck.Pwrck(macro, args.vdd, args.tslew[0])
+
+		if args.dumpSpectreInput:
+			print(pwrck.generateSpectreInput())
+			sys.exit(0)
+		if args.dumpOceanInput:
+			print(pwrck.generateOceanInput())
+			sys.exit(0)
+
+		run = src.pwrck.PwrckRun(pwrck)
+		print(run)
+	else:
+		run = src.pwrck.PwrckSweepRun(macro, args.vdd, args.tslew)
+		print(run)
+
+	if args.generateInputs:
+		run.generateInputs()
+	if args.runSpectre:
+		run.runSpectre()
+	if args.runOcean:
+		run.runOcean()
+	if args.run:
+		run.run()
 
 def printUsage():
 	sys.stderr.write("usage: potstill -h\n")
@@ -405,6 +258,11 @@ def printUsage():
 	sys.stderr.write("   or: potstill nodeset PREFIX NADDR NBITS\n")
 	sys.stderr.write("   or: potstill layout ADDRWIDTH DATAWIDTH OUTFILE\n")
 
+def printCharUsage():
+	sys.stderr.write("usage: potstill char -h\n")
+	sys.stderr.write("   or: potstill char AW DW COMMAND [OPTIONS]\n\n")
+	sys.stderr.write("Where the most common commands are:\n")
+	sys.stderr.write("   pwrck\n")
 
 def main(argv):
 	if len(argv) == 0 or argv[0] == "-h" or argv[0] == "--help":

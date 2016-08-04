@@ -32,7 +32,7 @@ for s in sims:
 		subprocess.check_call(["%s/templates/%s.ocn.py" % (BASE, s), str(num_addr)], stdout=f)
 
 	# Run the SPECTRE simulations.
-	# subprocess.check_call(["cds_mmsim", "spectre", "%s.scs" % s, "+escchars", "+log", "%s.out" % s, "-format", "psfxl", "-raw", "%s.psf" % s, "+aps"])
+	subprocess.check_call(["cds_mmsim", "spectre", "%s.scs" % s, "+escchars", "+log", "%s.out" % s, "-format", "psfxl", "-raw", "%s.psf" % s, "+aps"])
 
 
 # Process results using the generated OCEAN scripts.

@@ -11,4 +11,3 @@ fprintf(p, "E_write_fall,%g\n", (integ(-IT("VDD:p") 85n 90n) + integ(-IT("VDD:p"
 fprintf(p, "E_rw_rise,%g\n", (integ(-IT("VDD:p") 140n 145n) + integ(-IT("VDD:p") 155n 160n) + integ(-IT("VDD:p") 170n 175n) + integ(-IT("VDD:p") 185n 190n)) / 4 * 1.2)
 fprintf(p, "E_rw_fall,%g\n", (integ(-IT("VDD:p") 145n 150n) + integ(-IT("VDD:p") 160n 165n) + integ(-IT("VDD:p") 175n 180n) + integ(-IT("VDD:p") 190n 195n)) / 4 * 1.2)
 close(p)
-exit

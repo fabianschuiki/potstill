@@ -20,7 +20,7 @@
             <ObjectProp>
                 <Object Class="wsRect2DGraph">
                     <SimpleProp Name="allowEdgeCalcs" Value="1" Type="boolValue" />
-                    <SimpleProp Name="currentStripInsertionIndex" Value="1" Type="intValue" />
+                    <SimpleProp Name="currentStripInsertionIndex" Value="0" Type="intValue" />
                     <SimpleProp Name="displayIndex" Value="1" Type="intValue" />
                     <SimpleProp Name="fontsize" Value="medium" Type="fontSizeLevelsValue" />
                     <SimpleProp Name="forceSquareAspect" Value="0" Type="boolValue" />
@@ -65,7 +65,7 @@
                     <SimpleProp Name="viva.graph.useMultipleThreads" Value="always" Type="useMultipleThreadsModeValue" />
                     <SimpleProp Name="viva.rectGraph.activeStripCue" Value="Vertical Bar" Type="stringValue" />
                     <SimpleProp Name="viva.rectGraph.activeStripCueColor" Value="yellow" Type="stringValue" />
-                    <SimpleProp Name="viva.rectGraph.activeStripNumber" Value="4" Type="intValue" />
+                    <SimpleProp Name="viva.rectGraph.activeStripNumber" Value="1" Type="intValue" />
                     <SimpleProp Name="viva.rectGraph.analogTraceCount" Value="11" Type="intValue" />
                     <SimpleProp Name="viva.rectGraph.background" Value="#000000" Type="colorValue" />
                     <SimpleProp Name="viva.rectGraph.digitalStripHeight" Value="32" Type="intValue" />
@@ -102,9 +102,9 @@
                                 <SimpleProp Name="labelWithAxisNumber" Value="0" Type="boolValue" />
                                 <SimpleProp Name="majDivisions" Value="5" Type="intValue" />
                                 <SimpleProp Name="majorDelta" Value="0" Type="doubleValue" />
-                                <SimpleProp Name="maxScale" Value="2.44238959590677e-07" Type="doubleValue" />
+                                <SimpleProp Name="maxScale" Value="1.75e-07" Type="doubleValue" />
                                 <SimpleProp Name="minDivisions" Value="5" Type="intValue" />
-                                <SimpleProp Name="minScale" Value="2.18018545627087e-07" Type="doubleValue" />
+                                <SimpleProp Name="minScale" Value="0" Type="doubleValue" />
                                 <SimpleProp Name="modifier" Value="" Type="modifierValue" />
                                 <SimpleProp Name="modifierSet" Value="" Type="stringValue" />
                                 <SimpleProp Name="scaledUnit" Value="" Type="stringValue" />
@@ -143,11 +143,11 @@
                                 <SimpleProp Name="fixedSize" Value="0" Type="boolValue" />
                                 <SimpleProp Name="showEdgeBrowser" Value="0" Type="boolValue" />
                                 <SimpleProp Name="stripNumber" Value="1" Type="intValue" />
-                                <SimpleProp Name="zoom_x" Value="2.18018545627087E-07" Type="double" />
+                                <SimpleProp Name="zoom_x" Value="0.00000000000000" Type="double" />
                                 <SimpleProp Name="zoom_y" Value="-0.250000000000000" Type="double" />
-                                <SimpleProp Name="zoom_width" Value="2.62204139635904E-08" Type="double" />
+                                <SimpleProp Name="zoom_width" Value="1.75000000000000E-07" Type="double" />
                                 <SimpleProp Name="zoom_height" Value="1.50000000000000" Type="double" />
-                                <SimpleProp Name="isZoomed" Value="true" Type="bool" />
+                                <SimpleProp Name="isZoomed" Value="false" Type="bool" />
                                 <IndexedProp Name="depAxisList">
                                     <ObjectProp>
                                         <Object Class="wsDepAxis">
@@ -273,11 +273,11 @@
                                 <SimpleProp Name="fixedSize" Value="0" Type="boolValue" />
                                 <SimpleProp Name="showEdgeBrowser" Value="0" Type="boolValue" />
                                 <SimpleProp Name="stripNumber" Value="4" Type="intValue" />
-                                <SimpleProp Name="zoom_x" Value="2.18018545627087E-07" Type="double" />
-                                <SimpleProp Name="zoom_y" Value="-0.500000000000000" Type="double" />
-                                <SimpleProp Name="zoom_width" Value="2.62204139635904E-08" Type="double" />
-                                <SimpleProp Name="zoom_height" Value="2.00000000000000" Type="double" />
-                                <SimpleProp Name="isZoomed" Value="true" Type="bool" />
+                                <SimpleProp Name="zoom_x" Value="0.00000000000000" Type="double" />
+                                <SimpleProp Name="zoom_y" Value="-1.00000000000000" Type="double" />
+                                <SimpleProp Name="zoom_width" Value="1.75000000000000E-07" Type="double" />
+                                <SimpleProp Name="zoom_height" Value="2.50000000000000" Type="double" />
+                                <SimpleProp Name="isZoomed" Value="false" Type="bool" />
                                 <IndexedProp Name="depAxisList">
                                     <ObjectProp>
                                         <Object Class="wsDepAxis">
@@ -294,7 +294,7 @@
                                             <SimpleProp Name="majorDelta" Value="0" Type="doubleValue" />
                                             <SimpleProp Name="maxScale" Value="1.5" Type="doubleValue" />
                                             <SimpleProp Name="minDivisions" Value="5" Type="intValue" />
-                                            <SimpleProp Name="minScale" Value="-0.5" Type="doubleValue" />
+                                            <SimpleProp Name="minScale" Value="-1" Type="doubleValue" />
                                             <SimpleProp Name="modifier" Value="Magnitude" Type="modifierValue" />
                                             <SimpleProp Name="modifierSet" Value="" Type="stringValue" />
                                             <SimpleProp Name="scaledUnit" Value="" Type="stringValue" />
@@ -470,11 +470,11 @@
                                 <SimpleProp Name="fixedSize" Value="0" Type="boolValue" />
                                 <SimpleProp Name="showEdgeBrowser" Value="0" Type="boolValue" />
                                 <SimpleProp Name="stripNumber" Value="5" Type="intValue" />
-                                <SimpleProp Name="zoom_x" Value="2.18018545627087E-07" Type="double" />
-                                <SimpleProp Name="zoom_y" Value="-0.500000000000000" Type="double" />
-                                <SimpleProp Name="zoom_width" Value="2.62204139635904E-08" Type="double" />
-                                <SimpleProp Name="zoom_height" Value="2.00000000000000" Type="double" />
-                                <SimpleProp Name="isZoomed" Value="true" Type="bool" />
+                                <SimpleProp Name="zoom_x" Value="0.00000000000000" Type="double" />
+                                <SimpleProp Name="zoom_y" Value="-1.00000000000000" Type="double" />
+                                <SimpleProp Name="zoom_width" Value="1.75000000000000E-07" Type="double" />
+                                <SimpleProp Name="zoom_height" Value="2.50000000000000" Type="double" />
+                                <SimpleProp Name="isZoomed" Value="false" Type="bool" />
                                 <IndexedProp Name="depAxisList">
                                     <ObjectProp>
                                         <Object Class="wsDepAxis">
@@ -491,7 +491,7 @@
                                             <SimpleProp Name="majorDelta" Value="0" Type="doubleValue" />
                                             <SimpleProp Name="maxScale" Value="1.5" Type="doubleValue" />
                                             <SimpleProp Name="minDivisions" Value="5" Type="intValue" />
-                                            <SimpleProp Name="minScale" Value="-0.5" Type="doubleValue" />
+                                            <SimpleProp Name="minScale" Value="-1" Type="doubleValue" />
                                             <SimpleProp Name="modifier" Value="Magnitude" Type="modifierValue" />
                                             <SimpleProp Name="modifierSet" Value="" Type="stringValue" />
                                             <SimpleProp Name="scaledUnit" Value="" Type="stringValue" />
@@ -667,11 +667,11 @@
                                 <SimpleProp Name="fixedSize" Value="0" Type="boolValue" />
                                 <SimpleProp Name="showEdgeBrowser" Value="0" Type="boolValue" />
                                 <SimpleProp Name="stripNumber" Value="2" Type="intValue" />
-                                <SimpleProp Name="zoom_x" Value="2.18018545627087E-07" Type="double" />
+                                <SimpleProp Name="zoom_x" Value="0.00000000000000" Type="double" />
                                 <SimpleProp Name="zoom_y" Value="-1.00000000000000" Type="double" />
-                                <SimpleProp Name="zoom_width" Value="2.62204139635904E-08" Type="double" />
+                                <SimpleProp Name="zoom_width" Value="1.75000000000000E-07" Type="double" />
                                 <SimpleProp Name="zoom_height" Value="3.00000000000000" Type="double" />
-                                <SimpleProp Name="isZoomed" Value="true" Type="bool" />
+                                <SimpleProp Name="isZoomed" Value="false" Type="bool" />
                                 <IndexedProp Name="depAxisList">
                                     <ObjectProp>
                                         <Object Class="wsDepAxis">
@@ -864,11 +864,11 @@
                                 <SimpleProp Name="fixedSize" Value="0" Type="boolValue" />
                                 <SimpleProp Name="showEdgeBrowser" Value="0" Type="boolValue" />
                                 <SimpleProp Name="stripNumber" Value="6" Type="intValue" />
-                                <SimpleProp Name="zoom_x" Value="2.18018545627087E-07" Type="double" />
+                                <SimpleProp Name="zoom_x" Value="0.00000000000000" Type="double" />
                                 <SimpleProp Name="zoom_y" Value="-1.00000000000000" Type="double" />
-                                <SimpleProp Name="zoom_width" Value="2.62204139635904E-08" Type="double" />
+                                <SimpleProp Name="zoom_width" Value="1.75000000000000E-07" Type="double" />
                                 <SimpleProp Name="zoom_height" Value="3.00000000000000" Type="double" />
-                                <SimpleProp Name="isZoomed" Value="true" Type="bool" />
+                                <SimpleProp Name="isZoomed" Value="false" Type="bool" />
                                 <IndexedProp Name="depAxisList">
                                     <ObjectProp>
                                         <Object Class="wsDepAxis">
@@ -1061,11 +1061,11 @@
                                 <SimpleProp Name="fixedSize" Value="0" Type="boolValue" />
                                 <SimpleProp Name="showEdgeBrowser" Value="0" Type="boolValue" />
                                 <SimpleProp Name="stripNumber" Value="3" Type="intValue" />
-                                <SimpleProp Name="zoom_x" Value="2.18018545627087E-07" Type="double" />
+                                <SimpleProp Name="zoom_x" Value="0.00000000000000" Type="double" />
                                 <SimpleProp Name="zoom_y" Value="-1.00000000000000" Type="double" />
-                                <SimpleProp Name="zoom_width" Value="2.62204139635904E-08" Type="double" />
+                                <SimpleProp Name="zoom_width" Value="1.75000000000000E-07" Type="double" />
                                 <SimpleProp Name="zoom_height" Value="3.50000000000000" Type="double" />
-                                <SimpleProp Name="isZoomed" Value="true" Type="bool" />
+                                <SimpleProp Name="isZoomed" Value="false" Type="bool" />
                                 <IndexedProp Name="depAxisList">
                                     <ObjectProp>
                                         <Object Class="wsDepAxis">
