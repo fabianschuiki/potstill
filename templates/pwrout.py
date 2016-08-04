@@ -30,11 +30,6 @@ ocn.write("openResults(\"./pwrout.psf\")\n")
 ocn.write("selectResult('tran)\n")
 ocn.write("p = outfile(\"pwrout.csv\", \"w\")\n")
 
-pins_RA = ["RA%d" % i for i in range(num_addr)]
-pins_RD = ["RD%d" % i for i in range(num_bits)]
-pins_WA = ["WA%d" % i for i in range(num_addr)]
-pins_WD = ["WD%d" % i for i in range(num_bits)]
-
 scs.write("X (CK RE %s %s WE %s %s VDD 0) %s\n" % (
 	" ".join(["RA" for i in range(num_addr)]),
 	" ".join(["RD%d" % i for i in range(num_bits)]),
