@@ -8,6 +8,10 @@ import yaml
 import subprocess
 import src.macro
 import src.pwrck
+import src.pwrintcap
+import src.pwrout
+import src.trdwr
+import src.tsuho
 from src import nodeset
 from src import netlist
 
@@ -190,58 +194,62 @@ def mainLayout(argv):
 
 
 def mainChar(argv):
-	if len(argv) < 2 or argv[0] == "-h" or argv[0] == "--help":
-		printCharUsage()
-		sys.exit(1)
 
-	num_addr = int(argv[0])
-	num_bits = int(argv[1])
-	macro = src.macro.Macro(num_addr, num_bits)
+	parser = argparse.ArgumentParser(
+		description="Perform characterization for memory macros.",
+		prog="char"
+	)
+	parser.add_argument("num_addr", metavar="NADDR", type=int, help="number of address lines")
+	parser.add_argument("num_bits", metavar="NBITS", type=int, help="number of bits")
+	parser.add_argument("char", metavar="CHAR", type=str, help="characterization to perform")
+	parser.add_argument("--vdd", metavar="VDD", type=float, default=1.2, help="supply voltage [V]")
+	parser.add_argument("--temp", metavar="T", type=float, default=25, help="junction temperature [°C]")
+	parser.add_argument("args", nargs=argparse.REMAINDER)
+	args = parser.parse_args(argv)
 
-	mainCharMacro(macro, argv[2:])
+	macro = src.macro.MacroConditions(args.num_addr, args.num_bits, vdd=args.vdd, temp=args.temp)
 
-
-def mainCharMacro(macro, argv):
-	if len(argv) < 1:
-		printCharUsage()
-		sys.exit(1)
-	mainName = "mainChar" + argv[0].capitalize()
-	if mainName not in globals():
-		sys.stderr.write("Unknown characterization command \"%s\"\n\n" % argv[0])
-		printCharUsage()
-		sys.exit(1)
+	if args.char == "all":
+		mainCharMacroAll(macro, args.args)
 	else:
-		globals()[mainName](macro, argv[1:])
+		mainCharMacro(macro, args.char, args.args)
 
 
-def mainCharPwrck(macro, argv):
-	parser = argparse.ArgumentParser(description="Perform internal power characterization of the clock pin.")
-	parser.add_argument("tslew", metavar="TSLEW", type=float, nargs="+", help="transition time of the clock input signal")
-	parser.add_argument("-r", "--run", action="store_true")
+def mainCharMacroAll(macro, argv):
+	parser = argparse.ArgumentParser(description="Characterize all aspects of a macro.", prog="all")
+	parser.add_argument("--tslew", metavar="TSLEW", type=float, nargs="+", help="input transition times to evaluate", required=True)
+	parser.add_argument("--cload", metavar="CLOAD", type=float, nargs="+", help="output pin load capacitance to evaluate", required=True)
+	args = parser.parse_args(argv)
+
+	run = src.char.MacroRun(macro, args.tslew, args.cload)
+	run.run()
+
+
+def mainCharMacro(macro, charName, argv):
+	mainName = "mainChar" + charName.capitalize()
+	if mainName not in globals():
+		sys.stderr.write("Unknown characterization command \"%s\"\n\n" % charName)
+		printCharUsage()
+		sys.exit(1)
+
+	parser = argparse.ArgumentParser()
+	parser.add_argument("-r", "--run", action="store_true", help="implies -isag")
 	parser.add_argument("-i", "--inputs", action="store_true", dest="generateInputs", help="generate SPECTRE and OCEAN input files")
 	parser.add_argument("-s", "--simulate", action="store_true", dest="runSpectre", help="run SPECTRE simulation")
 	parser.add_argument("-a", "--analyze", action="store_true", dest="runOcean", help="run OCEAN analysis")
-	parser.add_argument("--dump-spectre", action="store_true", dest="dumpSpectreInput")
-	parser.add_argument("--dump-ocean", action="store_true", dest="dumpOceanInput")
-	parser.add_argument("--vdd", metavar="VDD", type=float, default=1.2, help="supply voltage")
-	args = parser.parse_args(argv)
-	print(args)
+	parser.add_argument("-c", "--results", action="store_true", dest="storeResults", help="collect results of individual runs")
+	parser.add_argument("--dump-spectre", action="store_true", dest="dumpSpectreInput", help="write SPECTRE input to stdout")
+	parser.add_argument("--dump-ocean", action="store_true", dest="dumpOceanInput", help="write OCEAN input to stdout")
+	parser.add_argument("--dump-results", action="store_true", help="write results to stdout")
 
-	if len(args.tslew) == 1:
-		pwrck = src.pwrck.Pwrck(macro, args.vdd, args.tslew[0])
+	(args, input, run) = globals()[mainName](macro, parser, argv)
 
-		if args.dumpSpectreInput:
-			print(pwrck.generateSpectreInput())
-			sys.exit(0)
-		if args.dumpOceanInput:
-			print(pwrck.generateOceanInput())
-			sys.exit(0)
-
-		run = src.pwrck.PwrckRun(pwrck)
-		print(run)
-	else:
-		run = src.pwrck.PwrckSweepRun(macro, args.vdd, args.tslew)
-		print(run)
+	if args.dumpSpectreInput:
+		print(input.generateSpectreInput())
+		sys.exit(0)
+	if args.dumpOceanInput:
+		print(input.generateOceanInput())
+		sys.exit(0)
 
 	if args.generateInputs:
 		run.generateInputs()
@@ -251,6 +259,96 @@ def mainCharPwrck(macro, argv):
 		run.runOcean()
 	if args.run:
 		run.run()
+	if args.storeResults:
+		run.storeResults()
+	if args.dump_results:
+		print(run.loadResults())
+
+
+def mainCharPwrck(macro, parentParser, argv):
+	parser = argparse.ArgumentParser(description="Perform internal power characterization for the clock.", prog="pwrck", parents=[parentParser], add_help=False)
+	parser.add_argument("tslew", metavar="TSLEW", type=float, nargs="+", help="transition time of the clock input signal")
+	args = parser.parse_args(argv)
+
+	if len(args.tslew) == 1:
+		input = src.pwrck.Pwrck(macro, args.tslew[0])
+		run = src.pwrck.PwrckRun(input)
+		return (args, input, run)
+	else:
+		run = src.pwrck.PwrckSweepRun(macro, args.tslew)
+		return (args, None, run)
+
+
+def mainCharPwrintcap(macro, parentParser, argv):
+	parser = argparse.ArgumentParser(description="Perform internal power and pin capacitance characterization for all inputs, excluding the clock.", prog="pwrintcap", parents=[parentParser], add_help=False)
+	parser.add_argument("tslew", metavar="TSLEW", type=float, nargs="+", help="transition time of the input signals")
+	args = parser.parse_args(argv)
+
+	if len(args.tslew) == 1:
+		input = src.pwrintcap.Pwrintcap(macro, args.tslew[0])
+		run = src.pwrintcap.PwrintcapRun(input)
+		return (args, input, run)
+	else:
+		run = src.pwrintcap.PwrintcapSweepRun(macro, args.tslew)
+		return (args, None, run)
+
+
+def mainCharPwrout(macro, parentParser, argv):
+	parser = argparse.ArgumentParser(description="Perform internal power characterization for all outputs.", prog="pwrout", parents=[parentParser], add_help=False)
+	parser.add_argument("--tslew", metavar="TSLEW", type=float, nargs="+", help="transition time of the input signals")
+	parser.add_argument("--cload", metavar="CLOAD", type=float, nargs="+", help="output pin load capacitance")
+	args = parser.parse_args(argv)
+
+	if len(args.tslew) == 1 and len(args.cload) == 1:
+		input = src.pwrout.Pwrout(macro, args.tslew[0], args.cload[0])
+		run = src.pwrout.PwroutRun(input)
+		return (args, input, run)
+	else:
+		run = src.pwrout.PwroutSweepRun(macro, args.tslew, args.cload)
+		return (args, None, run)
+
+
+def mainCharTrdwr(macro, parentParser, argv):
+	parser = argparse.ArgumentParser(
+		description="Perform read and write time characterization.",
+		prog="trdwr",
+		parents=[parentParser],
+		add_help=False)
+	parser.add_argument("--tslew", metavar="TSLEW", type=float, nargs="+", help="transition time of the input signals")
+	parser.add_argument("--cload", metavar="CLOAD", type=float, nargs="+", help="output pin load capacitance")
+	args = parser.parse_args(argv)
+
+	if len(args.tslew) == 1 and len(args.cload) == 1:
+		input = src.trdwr.Trdwr(macro, args.tslew[0], args.cload[0])
+		run = src.trdwr.TrdwrRun(input)
+		return (args, input, run)
+	else:
+		run = src.trdwr.TrdwrSweepRun(macro, args.tslew, args.cload)
+		return (args, None, run)
+
+
+def mainCharTsuho(macro, parentParser, argv):
+	parser = argparse.ArgumentParser(description="Perform setup and hold time characterization.", prog="tsuho", parents=[parentParser], add_help=False)
+	parser.add_argument("--tslewck", metavar="TSLEWCK", type=float, nargs="+", help="transition time of the clock signal", required=True)
+	parser.add_argument("--tslewpin", metavar="TSLEWPIN", type=float, nargs="+", help="transition time of the input signal", required=True)
+	parser.add_argument("--setup", action="store_true", help="only perform setup time analysis")
+	parser.add_argument("--hold", action="store_true", help="only perform hold time analysis")
+	args = parser.parse_args(argv)
+
+	if len(args.tslewck) == 1 and len(args.tslewpin) == 1:
+		tsu_input = src.tsuho.Tsu(macro, args.tslewck[0], args.tslewpin[0])
+		tho_input = src.tsuho.Tho(macro, tsu_input.oceanOutputName, args.tslewck[0], args.tslewpin[0])
+
+		run = src.tsuho.TsuhoCombinedRun(tsu_input, tho_input)
+		if args.setup:
+			return (args, tsu_input, run.su_run)
+		if args.hold:
+			return (args, tho_input, run.ho_run)
+		return (args, None, run)
+	else:
+		run = src.tsuho.TsuhoSweepRun(macro, args.tslewck, args.tslewpin)
+		return (args, None, run)
+
 
 def printUsage():
 	sys.stderr.write("usage: potstill -h\n")
@@ -263,6 +361,10 @@ def printCharUsage():
 	sys.stderr.write("   or: potstill char AW DW COMMAND [OPTIONS]\n\n")
 	sys.stderr.write("Where the most common commands are:\n")
 	sys.stderr.write("   pwrck\n")
+	sys.stderr.write("   pwrintcap\n")
+	sys.stderr.write("   pwrout\n")
+	sys.stderr.write("   trdwr\n")
+	sys.stderr.write("   tsuho\n")
 
 def main(argv):
 	if len(argv) == 0 or argv[0] == "-h" or argv[0] == "--help":

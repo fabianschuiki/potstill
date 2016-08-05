@@ -6,3 +6,9 @@ class Macro(object):
 		self.num_addr = num_addr
 		self.num_bits = num_bits
 		self.name = (name if name is not None else "PS%dX%d" % (2**num_addr, num_bits))
+
+class MacroConditions(Macro):
+	def __init__(self, *args, vdd=1.2, temp=25, **kwargs):
+		super(MacroConditions, self).__init__(*args, **kwargs)
+		self.vdd = vdd
+		self.temp = temp
