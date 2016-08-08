@@ -102,7 +102,7 @@ class Tsu(src.char.RunInput):
 		# For the edge triggered sequential elements.
 		for s in [("RA", 4*T, 8*T), ("WD", 4*T, 8*T)]:
 			ocn.append("Tpd_%s_rise = (X_%s_rise - int(X_%s_rise / %g) * %g - %g)" % (s[0], s[0], s[0], Tcycle*T, Tcycle*T, s[1]+Tstart*T))
-			ocn.append("Tpd_%s_fall = (X_%s_fall - int(X_%s_rise / %g) * %g - %g)" % (s[0], s[0], s[0], Tcycle*T, Tcycle*T, s[2]+Tstart*T))
+			ocn.append("Tpd_%s_fall = (X_%s_fall - int(X_%s_fall / %g) * %g - %g)" % (s[0], s[0], s[0], Tcycle*T, Tcycle*T, s[2]+Tstart*T))
 
 		# Calculate the threshold values for the propagation delay which if crossed mark
 		# a setup violation.

@@ -29,7 +29,7 @@ class Pwrck(src.char.RunInput):
 			" ".join(["A%d" % i for i in range(num_addr)]),
 			" ".join(["RD%d" % i for i in range(num_bits)]),
 			" ".join(["A%d" % i for i in range(num_addr)]),
-			" ".join(["WD%d" % i for i in range(num_bits)]),
+			" ".join(["WD" for i in range(num_bits)]),
 			self.macro.name
 		))
 
@@ -58,8 +58,11 @@ class Pwrck(src.char.RunInput):
 				(2**i*6)*T
 			))
 
-		for i in range(num_bits):
-			scs.append("VWD%d (WD%d 0) vsource type=dc dc=0" % (i,i))
+		scs.append("VWD (WD 0) vsource type=pulse val0=0 val1=vdd delay=%g width=%g-tslew period=%g rise=tslew fall=tslew" % (
+			(Ts_wr)*T,
+			3*T,
+			6*T,
+		))
 
 		# Specify the transient analysis to perform.
 		scs.append("tran tran stop=%g errpreset=conservative readns=\"%s\"" % ((Ts_done+1)*T, self.nodesetName))
@@ -69,7 +72,7 @@ class Pwrck(src.char.RunInput):
 		scs.append("save CK RE WE")
 		scs.append("save A* depth=1")
 		scs.append("save RD* depth=1")
-		scs.append("save WD* depth=1")
+		scs.append("save WD depth=1")
 
 		# Generate the OCEAN script commands to analyze the power consumed.
 		ocn.append("fprintf(p, \"P_leak,%%g\\n\", integ(-IT(\"VDD:p\") 0n %g) / %g * VDD)" % (1*T, 1*T))
