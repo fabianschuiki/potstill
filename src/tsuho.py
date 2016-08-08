@@ -16,14 +16,14 @@ class Tsu(src.char.RunInput):
 		self.tslewpin = tslewpin
 
 		self.Tfrom = -150e-12
-		self.Tto = 150e-12
-		self.Ncycles = 100
+		self.Tto = 300e-12
+		self.Ncycles = 50
 		self.triggerRatio = 1.05
 
 	def generateInputs(self):
 		num_addr = self.macro.num_addr
 		num_bits = self.macro.num_bits
-		T = 1e-9
+		T = 5e-9
 
 		# Calculate the initial edge position and the drift per cycle.
 		Tinit = self.Tfrom
@@ -134,7 +134,7 @@ class Tho(src.char.RunInput):
 
 		self.Tfrom = 400e-12
 		self.Tto = -100e-12
-		self.Ncycles = 100
+		self.Ncycles = 50
 		self.triggerRatio = 1.05
 
 	def generateInputs(self):

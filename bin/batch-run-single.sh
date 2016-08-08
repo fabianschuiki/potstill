@@ -9,7 +9,7 @@ fi
 
 echo "Starting $@"
 start=$(date +%s.%N)
-sleep 2
+"$@"
 status=$?
 duration=$(echo "$(date +%s.%N) - $start" | bc)
 if [ $status -ne 0 ]; then

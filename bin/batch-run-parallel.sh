@@ -9,6 +9,6 @@ fi
 
 echo "Starting batch run"
 start=$(date +%s.%N)
-find -name "run.sh" -print0 | xargs -0 -n 1 -P $1 potstill batch-run-single
+find . -mindepth 2 -name "run.sh" -print0 | xargs -0 -n 1 -P $1 potstill batch-run-single
 duration=$(echo "$(date +%s.%N) - $start" | bc)
 echo "Finished batch run (after $duration s)"
