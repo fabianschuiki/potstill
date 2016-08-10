@@ -1,25 +1,15 @@
 #!/bin/bash
 # Copyright (c) 2016 Fabian Schuiki
-# Execute all "run.sh" scripts in a subdirectory.
+# Execute all "run.sh" scripts in an entire directory tree.
 
-total_status=0
-
-find -name "run.sh" | while read RUN; do
-	DIR="$(dirname $RUN)"
-	echo "Running $DIR"
-	pushd "$DIR" > /dev/null
-	./run.sh > /dev/null
-	status=$?
-	if [ $status -ne 0 ]; then
-		echo "Run $DIR failed"
-		total_status=$status
-	fi
-	popd > /dev/null
-done
-
-if [ $total_status -ne 0 ]; then
-	echo "Some runs failed" >&2
+if [ $# -lt 1 ]; then
+	NUM_PROCS=1
 else
-	echo "All runs successful" >&2
+	NUM_PROCS=$1
 fi
-exit $total_status
+
+echo "Starting batch run"
+start=$(date +%s.%N)
+find . -mindepth 2 -name "run.sh" -print0 | xargs -0 -n 1 -P $NUM_PROCS potstill batch-run-single
+duration=$(echo "$(date +%s.%N) - $start" | bc)
+echo "Finished batch run (after $duration s)"

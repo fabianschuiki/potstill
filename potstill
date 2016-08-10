@@ -18,5 +18,8 @@ fi
 if [ -e "$CMD.sh" ]; then
 	exec bash -- "$CMD.sh" "${@:2}"
 fi
+if [ -e "$CMD.py" ]; then
+	exec python3 "$CMD.py" "${@:2}"
+fi
 
 exec "$BASE/potstill-core" "${@:1}"
