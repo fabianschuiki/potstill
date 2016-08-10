@@ -20,14 +20,6 @@ def generate(size, bits):
 	# Add the root clock gates.
 	lines.append("XRWCKG RE WE CK nRCKP nRCKN nWCKP nWCKN VDD VSS PSRWCKG")
 
-	# # Add the clock buffer that provides the root CKP and CKN signals.
-	# lines.append("XI0 CK nCKN VDD VSS INV PARAMS: wp=630e-9 wn=260e-9")
-	# lines.append("XI1 nCKN nCKP VDD VSS INV PARAMS: wp=630e-9 wn=260e-9")
-
-	# # Instantiate the two global clock gates.
-	# lines.append("XWCKG WE nCKP nCKN nWCKP nWCKN VDD VSS CKG")
-	# lines.append("XRCKG RE nCKP nCKN nRCKP nRCKN VDD VSS CKG")
-
 	# Instantiate the address decoder.
 	lines.append("XAD nWCKP nWCKN %s %s %s VDD VSS PSAD%d" % (
 		netsRA, netsWA, netsSGPGN, 2**size
@@ -102,35 +94,24 @@ def generateAD(size):
 		" ".join(["WA%d" % i for i in range(size)]),
 		" ".join(["S%d GP%d GN%d" % (i,i,i) for i in range(2**size)])
 	))
+
+	# Instantiate the clock gates that generate the WWL.
 	for i in range(2**size):
 		lines.append("XCKG%d nWE%d CKP CKN GP%d GN%d VDD VSS PSADCKG " % (
 			i, i, i, i,
 		))
 
-	# if size > 3:
-	# 	radOutName = "S%d"
-	# 	wadOutName = "nWEB%d"
-	# 	invIn = "nWEB%d"
-	# 	invOut = "nWE%d"
-	# else:
-	# 	radOutName = "nRE%d"
-	# 	wadOutName = "nWE%d"
-	# 	invIn = "nRE%d"
-	# 	invOut = "S%d"
-
+	# Instantiate the one-hot decoder for the read and write address.
 	lines.append("XRAD %s %s VDD VSS PSADOH%d" % (
 		" ".join(["RA%d" % i for i in range(size)]),
-		" ".join(["S%d" % i for i in range(2**size)]),
+		" ".join(["S%d"  % i for i in range(2**size)]),
 		2**size
 	))
 	lines.append("XWAD %s %s VDD VSS PSADOH%d" % (
-		" ".join(["WA%d" % i for i in range(size)]),
+		" ".join(["WA%d"  % i for i in range(size)]),
 		" ".join(["nWE%d" % i for i in range(2**size)]),
 		2**size
 	))
-
-	# for i in range(2**size):
-	# 	lines.append("XINV%d %s %s VDD VSS PSADINV" % (i, invIn % i, invOut % i))
 
 	lines.append(".ENDS")
 	return generateADOH(size) + "\n\n" + "\n".join(lines)
@@ -139,7 +120,7 @@ def generateAD(size):
 # Generate the netlist for the one-hot decoder used in address decoders.
 def generateADOH(size):
 	lines = list()
-	with open("%s/umc65/netlists/PSADOH%dR.cir" % (BASE, 2**size), "r") as f:
+	with open(BASE+"/umc65/netlists/PSADOH.cir") as f:
 		lines.append(f.read())
 
 	lines.append(".SUBCKT PSADOH%d %s %s VDD VSS" % (2**size,

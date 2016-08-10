@@ -16,7 +16,7 @@ def generateREGLA(prefix, value):
 
 
 def generateREG(prefix, value):
-	return generateREGLA(prefix+".XI0", value) + generateREGLA(prefix+".XI1", value)
+	return generateREGLA(prefix+".XI0", value) + generateREGLA(prefix+".XI1", 1.2-value)
 
 
 def generateBA1(prefix, value):

@@ -183,7 +183,7 @@ def mainNodeset(argv):
 	if len(argv) < 3:
 		printUsage()
 		sys.exit(1)
-	nodeset.generate(argv[0], int(argv[1]), int(argv[2]))
+	sys.stdout.write(nodeset.generate(argv[0], int(argv[1]), int(argv[2])))
 
 
 def mainLayout(argv):
