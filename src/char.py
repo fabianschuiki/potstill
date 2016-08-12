@@ -1,5 +1,5 @@
 # Copyright (c) 2016 Fabian Schuiki
-import os, subprocess, csv
+import sys, os, subprocess, csv
 from collections import OrderedDict
 import src.macro
 import src.netlist
@@ -73,7 +73,7 @@ class SimulationRun(Run):
 		subprocess.check_call(["cds_mmsim", "spectre", self.spectreInputName, "+escchars", "+log", "spectre.out", "-format", "psfxl", "-raw", self.input.spectreOutputName, "++aps"], cwd=self.workdir)
 
 	def runOcean(self):
-		with subprocess.Popen(["cds_ic6", "ocean", "-nograph"], stdin=subprocess.PIPE, universal_newlines=True, cwd=self.workdir) as ocean:
+		with subprocess.Popen(["cds_ic6", "ocean", "-log", "CDS.log", "-nograph"], stdin=subprocess.PIPE, universal_newlines=True, cwd=self.workdir) as ocean:
 			ocean.stdin.write("load(\"%s\")\n" % self.oceanInputName)
 			ocean.stdin.write("exit\n")
 			ocean.stdin.flush()
@@ -139,7 +139,7 @@ class SweepSimulationRun(SweepRun):
 			run.runSpectre()
 
 	def runOcean(self):
-		with subprocess.Popen(["cds_ic6", "ocean", "-nograph"], stdin=subprocess.PIPE, universal_newlines=True, cwd=self.workdir) as ocean:
+		with subprocess.Popen(["cds_ic6", "ocean", "-log", "CDS.log", "-nograph"], stdin=subprocess.PIPE, universal_newlines=True, cwd=self.workdir) as ocean:
 			for run in self.runs:
 				ocean.stdin.write("cd(\"%s\")\n" % (os.getcwd()+"/"+run.workdir))
 				ocean.stdin.write("load(\"%s\")\n" % run.oceanInputName)

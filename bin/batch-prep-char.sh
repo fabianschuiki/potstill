@@ -27,7 +27,7 @@ function make_run {
 		mkdir "$1"
 	fi
 	pushd "$1" > /dev/null
-	echo potstill batch-prep-run "${@:2}"
+	potstill batch-prep-run "${@:2}"
 	popd > /dev/null
 }
 

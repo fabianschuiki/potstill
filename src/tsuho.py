@@ -16,8 +16,8 @@ class Tsu(src.char.RunInput):
 		self.tslewpin = tslewpin
 
 		self.Tfrom = -150e-12
-		self.Tto = 300e-12
-		self.Ncycles = 50
+		self.Tto = 500e-12
+		self.Ncycles = 75
 		self.triggerRatio = 1.05
 
 	def generateInputs(self):
@@ -132,15 +132,15 @@ class Tho(src.char.RunInput):
 		self.tslewpin = tslewpin
 		self.setupCsvName = setupCsvName
 
-		self.Tfrom = 400e-12
+		self.Tfrom = 600e-12
 		self.Tto = -100e-12
-		self.Ncycles = 50
+		self.Ncycles = 75
 		self.triggerRatio = 1.05
 
 	def generateInputs(self):
 		num_addr = self.macro.num_addr
 		num_bits = self.macro.num_bits
-		T = 1e-9
+		T = 5e-9
 
 		# Read the CSV file containing the setup times.
 		with open(self.setupCsvName, "r") as f:

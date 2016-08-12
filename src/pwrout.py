@@ -40,10 +40,10 @@ class Pwrout(src.char.RunInput):
 
 		scs.append("parameters vdd=%g tslew=%g cload=%g" % (self.macro.vdd, self.tslew, self.cload))
 		scs.append("VDD (VDD 0) vsource type=dc dc=vdd")
-		scs.append("VCK (CK, 0) vsource type=pulse val0=0 val1=vdd delay=%g width=%g-tslew period=%g rise=tslew fall=tslew" % (1*T, 1*T, 3*T))
-		scs.append("VWE (WE, 0) vsource type=pulse val0=0 val1=vdd delay=%g width=%g-tslew rise=tslew fall=tslew" % (3*T, 3*T))
-		scs.append("VRE (RE, 0) vsource type=pulse val0=vdd val1=0 delay=%g width=%g-tslew rise=tslew fall=tslew" % (3*T, 3*T))
-		scs.append("VRA (RA, 0) vsource type=pulse val0=0 val1=vdd delay=%g width=%g-tslew rise=tslew fall=tslew" % (6*T, 3*T))
+		scs.append("VCK (CK 0) vsource type=pulse val0=0 val1=vdd delay=%g width=%g-tslew period=%g rise=tslew fall=tslew" % (1*T, 1*T, 3*T))
+		scs.append("VWE (WE 0) vsource type=pulse val0=0 val1=vdd delay=%g width=%g-tslew rise=tslew fall=tslew" % (3*T, 3*T))
+		scs.append("VRE (RE 0) vsource type=pulse val0=vdd val1=0 delay=%g width=%g-tslew rise=tslew fall=tslew" % (3*T, 3*T))
+		scs.append("VRA (RA 0) vsource type=pulse val0=0 val1=vdd delay=%g width=%g-tslew rise=tslew fall=tslew" % (6*T, 3*T))
 
 		# Calculate the energy consumed by the clock, which needs to be subtracted from
 		# the energy consumed by the circuit during a change in output.
