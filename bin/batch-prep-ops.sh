@@ -11,6 +11,13 @@ echo "#!/bin/bash" > prep.sh
 echo "potstill batch-prep-ops $@" >> prep.sh
 chmod +x prep.sh
 
+echo "#!/bin/bash" > merge.sh
+echo "cd \$(dirname \${BASH_SOURCE[0]})" >> merge.sh
+for char in pwrck pwrintcap pwrout trdwr tsuho; do
+	echo "potstill collect -r $char/results.csv > $char.csv" >> merge.sh
+done
+chmod +x merge.sh
+
 for element in "1.2 25" "1.08 125" "1.32 0"; do
 	opcond=($element)
 	vdd=${opcond[0]}
