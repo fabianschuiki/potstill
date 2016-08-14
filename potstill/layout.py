@@ -102,9 +102,6 @@ class Layout(object):
 		with open(os.path.dirname(__file__)+"/../umc65/config.yml") as f:
 			self.config = yaml.load(f)
 
-		# Make sure there is enough room for the read address registers.
-		assert(self.num_addr <= self.num_bits)
-
 		# Calculate the number of bits and address bits that go to the left and
 		# right of the central spine.
 		self.num_bits_left  = int(num_bits/2)
