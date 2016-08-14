@@ -1,6 +1,0 @@
-openResults("./trdwr.psf")
-selectResult('tran)
-p = outfile("trdwr.csv", "w")
-fprintf(p, "t_wr,%g\n", cross(VT("X.XBA0.X3.nZ") 0.6 1) - cross(VT("CK") 0.6 1))
-fprintf(p, "t_rd,%g\n", cross(VT("RD0") 0.6 1) - cross(VT("CK") 0.6 3))
-close(p)
