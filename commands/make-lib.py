@@ -2,9 +2,9 @@
 # Copyright (c) 2016 Fabian Schuiki
 import sys, os, argparse, itertools
 sys.path.insert(0, sys.path[0]+"/..")
-import src.macro
-import src.timing
-import src.layout
+import potstill.macro
+import potstill.timing
+import potstill.layout
 
 
 # Parse the command line arguments.
@@ -15,9 +15,9 @@ args = parser.parse_args()
 
 
 # Calculate the timing.
-macond = src.macro.MacroConditions(args.num_addr, args.num_bits)
-timing = src.timing.Timing(macond)
-layout = src.layout.Layout(args.num_addr, args.num_bits)
+macond = potstill.macro.MacroConditions(args.num_addr, args.num_bits)
+timing = potstill.timing.Timing(macond)
+layout = potstill.layout.Layout(args.num_addr, args.num_bits)
 
 
 # Generate and output the LIB file.

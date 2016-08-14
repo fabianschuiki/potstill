@@ -2,7 +2,7 @@
 # Copyright (c) 2016 Fabian Schuiki
 import sys, os, argparse, itertools
 sys.path.insert(0, sys.path[0]+"/..")
-import src.layout
+import potstill.layout
 
 # Parse the command line arguments.
 parser = argparse.ArgumentParser(prog="potstill make-lef", description="Generate the LEF view of a memory macro.")
@@ -11,7 +11,7 @@ parser.add_argument("num_bits", metavar="NBITS", type=int, help="number of bits"
 args = parser.parse_args()
 
 # Generate the layout for the macro.
-layout = src.layout.Layout(args.num_addr, args.num_bits)
+layout = potstill.layout.Layout(args.num_addr, args.num_bits)
 
 # Generate and output the LEF file.
 class LefWriter(object):

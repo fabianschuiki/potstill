@@ -1,9 +1,9 @@
 # Copyright (c) 2016 Fabian Schuiki
-import src.char
+import potstill.char
 import itertools
 
 
-class Pwrout(src.char.RunInput):
+class Pwrout(potstill.char.RunInput):
 	def __init__(self, macro, tslew, cload, *args, **kwargs):
 		super(Pwrout, self).__init__(macro, *args, **kwargs)
 		self.tslew = tslew
@@ -19,7 +19,7 @@ class Pwrout(src.char.RunInput):
 		ocn = list()
 
 		scs.append("// %s" % self.macro.name)
-		scs.append("include \"%s/sim/preamble.scs\"" % src.char.BASE)
+		scs.append("include \"%s/sim/preamble.scs\"" % potstill.char.BASE)
 		scs.append("include \"%s\"" % self.netlistName)
 		scs.append("o1 options temp=%g tnom=%g" % (self.macro.temp, self.macro.temp))
 
@@ -75,7 +75,7 @@ class Pwrout(src.char.RunInput):
 		return ("\n".join(scs), "\n".join(ocn))
 
 
-class PwroutRun(src.char.SimulationRun):
+class PwroutRun(potstill.char.SimulationRun):
 	def __init__(self, input, *args, **kwargs):
 		super(PwroutRun, self).__init__(input, *args, **kwargs)
 
@@ -83,7 +83,7 @@ class PwroutRun(src.char.SimulationRun):
 		return [("tslew", self.input.tslew), ("cload", self.input.cload)]
 
 
-class PwroutSweepRun(src.char.SweepSimulationRun):
+class PwroutSweepRun(potstill.char.SweepSimulationRun):
 	def __init__(self, macro, tslew, cload, *args, **kwargs):
 		super(PwroutSweepRun, self).__init__(*args, **kwargs)
 		self.macro = macro

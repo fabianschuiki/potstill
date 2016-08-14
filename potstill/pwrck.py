@@ -1,8 +1,8 @@
 # Copyright (c) 2016 Fabian Schuiki
-import src.char
+import potstill.char
 
 
-class Pwrck(src.char.RunInput):
+class Pwrck(potstill.char.RunInput):
 	def __init__(self, macro, tslew, *args, **kwargs):
 		super(Pwrck, self).__init__(macro, *args, **kwargs)
 		self.tslew = tslew
@@ -16,7 +16,7 @@ class Pwrck(src.char.RunInput):
 		ocn = list()
 
 		scs.append("// %s" % self.macro.name)
-		scs.append("include \"%s/sim/preamble.scs\"" % src.char.BASE)
+		scs.append("include \"%s/sim/preamble.scs\"" % potstill.char.BASE)
 		scs.append("include \"%s\"" % self.netlistName)
 		scs.append("o1 options temp=%g tnom=%g" % (self.macro.temp, self.macro.temp))
 
@@ -99,7 +99,7 @@ class Pwrck(src.char.RunInput):
 		return ("\n".join(scs), "\n".join(ocn))
 
 
-class PwrckRun(src.char.SimulationRun):
+class PwrckRun(potstill.char.SimulationRun):
 	def __init__(self, input, *args, **kwargs):
 		super(PwrckRun, self).__init__(input, *args, **kwargs)
 
@@ -107,7 +107,7 @@ class PwrckRun(src.char.SimulationRun):
 		return [("tslew", self.input.tslew)]
 
 
-class PwrckSweepRun(src.char.SweepSimulationRun):
+class PwrckSweepRun(potstill.char.SweepSimulationRun):
 	def __init__(self, macro, tslew, *args, **kwargs):
 		super(PwrckSweepRun, self).__init__(*args, **kwargs)
 		self.macro = macro

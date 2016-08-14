@@ -1,8 +1,8 @@
 # Copyright (c) 2016 Fabian Schuiki
 import sys, os, subprocess, csv
 from collections import OrderedDict
-import src.macro
-import src.netlist
+import potstill.macro
+import potstill.netlist
 
 
 BASE = os.path.dirname(__file__)+"/.."
@@ -56,11 +56,11 @@ class SimulationRun(Run):
 	def generateInputs(self):
 		# Netlist
 		with open(self.workpath(self.input.netlistName), "w") as f:
-			f.write(src.netlist.generateMacro(self.input.macro))
+			f.write(potstill.netlist.generateMacro(self.input.macro))
 
 		# Nodeset
 		with open(self.workpath(self.input.nodesetName), "w") as f:
-			f.write(src.nodeset.generateMacro("X", self.input.macro))
+			f.write(potstill.nodeset.generateMacro("X", self.input.macro))
 
 		# SPECTRE and OCEAN inputs
 		inputs = self.input.generateInputs()
@@ -99,7 +99,7 @@ class SweepRun(Run):
 	# Collects the results of all runs in this sweep into a combined results
 	# file.
 	def storeResults(self):
-		results = [src.char.merge_dict(run.params(), run.loadResults()) for run in self.runs]
+		results = [potstill.char.merge_dict(run.params(), run.loadResults()) for run in self.runs]
 
 		# Make a list of columns.
 		columns = list()
@@ -160,11 +160,11 @@ class MacroRun(Run):
 		self.cload = cload
 
 		self.runs = list()
-		self.runs.append(src.pwrck.PwrckSweepRun(macro, tslew, workdir="pwrck"))
-		self.runs.append(src.pwrintcap.PwrintcapSweepRun(macro, tslew, workdir="pwrintcap"))
-		self.runs.append(src.pwrout.PwroutSweepRun(macro, tslew, cload, workdir="pwrout"))
-		self.runs.append(src.trdwr.TrdwrSweepRun(macro, tslew, cload, workdir="trdwr"))
-		self.runs.append(src.tsuho.TsuhoSweepRun(macro, tslew, cload, workdir="tsuho"))
+		self.runs.append(potstill.pwrck.PwrckSweepRun(macro, tslew, workdir="pwrck"))
+		self.runs.append(potstill.pwrintcap.PwrintcapSweepRun(macro, tslew, workdir="pwrintcap"))
+		self.runs.append(potstill.pwrout.PwroutSweepRun(macro, tslew, cload, workdir="pwrout"))
+		self.runs.append(potstill.trdwr.TrdwrSweepRun(macro, tslew, cload, workdir="trdwr"))
+		self.runs.append(potstill.tsuho.TsuhoSweepRun(macro, tslew, cload, workdir="tsuho"))
 
 	def run(self):
 		for run in self.runs:

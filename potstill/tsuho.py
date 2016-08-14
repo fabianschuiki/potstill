@@ -1,6 +1,6 @@
 # Copyright (c) 2016 Fabian Schuiki
 import csv, os
-import src.char
+import potstill.char
 import itertools
 from collections import OrderedDict
 
@@ -9,7 +9,7 @@ def scsStmt(scs, *args, **kwargs):
 	scs.append(" ".join(list(args) + ["%s=%s" % (k,v) for k,v in kwargs.items()])+"\n")
 
 
-class Tsu(src.char.RunInput):
+class Tsu(potstill.char.RunInput):
 	def __init__(self, macro, tslewck, tslewpin, *args, oceanOutputName="setup.csv", spectreOutputName="setup.psf", **kwargs):
 		super(Tsu, self).__init__(macro, *args, oceanOutputName=oceanOutputName, spectreOutputName=spectreOutputName, **kwargs)
 		self.tslewck = tslewck
@@ -33,7 +33,7 @@ class Tsu(src.char.RunInput):
 		ocn = list()
 
 		scs.append("// %s" % self.macro.name)
-		scs.append("include \"%s/sim/preamble.scs\"" % src.char.BASE)
+		scs.append("include \"%s/sim/preamble.scs\"" % potstill.char.BASE)
 		scs.append("include \"%s\"" % self.netlistName)
 		scs.append("o1 options temp=%g tnom=%g" % (self.macro.temp, self.macro.temp))
 
@@ -125,7 +125,7 @@ class Tsu(src.char.RunInput):
 		return ("\n".join(scs), "\n".join(ocn))
 
 
-class Tho(src.char.RunInput):
+class Tho(potstill.char.RunInput):
 	def __init__(self, macro, setupCsvName, tslewck, tslewpin, *args, oceanOutputName="hold.csv", spectreOutputName="hold.psf", **kwargs):
 		super(Tho, self).__init__(macro, *args, oceanOutputName=oceanOutputName, spectreOutputName=spectreOutputName, **kwargs)
 		self.tslewck = tslewck
@@ -154,7 +154,7 @@ class Tho(src.char.RunInput):
 		ocn = list()
 
 		scs.append("// %s" % self.macro.name)
-		scs.append("include \"%s/sim/preamble.scs\"" % src.char.BASE)
+		scs.append("include \"%s/sim/preamble.scs\"" % potstill.char.BASE)
 		scs.append("include \"%s\"" % self.netlistName)
 		scs.append("o1 options temp=%g tnom=%g" % (self.macro.temp, self.macro.temp))
 
@@ -284,7 +284,7 @@ class Tho(src.char.RunInput):
 		return ("\n".join(scs), "\n".join(ocn))
 
 
-class TsuhoRun(src.char.SimulationRun):
+class TsuhoRun(potstill.char.SimulationRun):
 	def __init__(self, input, *args, **kwargs):
 		super(TsuhoRun, self).__init__(input, *args, **kwargs)
 
@@ -292,7 +292,7 @@ class TsuhoRun(src.char.SimulationRun):
 		return [("tslewck", self.input.tslewck), ("tslewpin", self.input.tslewpin)]
 
 
-class TsuhoCombinedRun(src.char.Run):
+class TsuhoCombinedRun(potstill.char.Run):
 	def __init__(self, tsu_input, tho_input, resultsName="results.csv", *args, **kwargs):
 		super(TsuhoCombinedRun, self).__init__(*args, **kwargs)
 		self.resultsName = resultsName
@@ -330,7 +330,7 @@ def makeCombinedRun(macro, x, *args, **kwargs):
 	return TsuhoCombinedRun(su, ho, *args, **kwargs)
 
 
-class TsuhoSweepRun(src.char.SweepRun):
+class TsuhoSweepRun(potstill.char.SweepRun):
 	def __init__(self, macro, tslewck, tslewpin, *args, **kwargs):
 		super(TsuhoSweepRun, self).__init__(*args, **kwargs)
 		self.macro = macro

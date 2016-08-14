@@ -6,16 +6,17 @@ import math
 import argparse
 import yaml
 import subprocess
-import src.macro
-import src.pwrck
-import src.pwrintcap
-import src.pwrout
-import src.trdwr
-import src.tsuho
-from src import nodeset
-from src import netlist
+sys.path.insert(0, sys.path[0]+"/..")
+import potstill.macro
+import potstill.pwrck
+import potstill.pwrintcap
+import potstill.pwrout
+import potstill.trdwr
+import potstill.tsuho
+from potstill import nodeset
+from potstill import netlist
 
-BASE = sys.path[0]
+BASE = sys.path[0]+"/.."
 
 
 def generateLayout(size, bits, outfile):
@@ -207,7 +208,7 @@ def mainChar(argv):
 	parser.add_argument("args", nargs=argparse.REMAINDER)
 	args = parser.parse_args(argv)
 
-	macro = src.macro.MacroConditions(args.num_addr, args.num_bits, vdd=args.vdd, temp=args.temp)
+	macro = potstill.macro.MacroConditions(args.num_addr, args.num_bits, vdd=args.vdd, temp=args.temp)
 
 	if args.char == "all":
 		mainCharMacroAll(macro, args.args)
@@ -221,7 +222,7 @@ def mainCharMacroAll(macro, argv):
 	parser.add_argument("--cload", metavar="CLOAD", type=float, nargs="+", help="output pin load capacitance to evaluate", required=True)
 	args = parser.parse_args(argv)
 
-	run = src.char.MacroRun(macro, args.tslew, args.cload)
+	run = potstill.char.MacroRun(macro, args.tslew, args.cload)
 	run.run()
 
 
@@ -271,11 +272,11 @@ def mainCharPwrck(macro, parentParser, argv):
 	args = parser.parse_args(argv)
 
 	if len(args.tslew) == 1:
-		input = src.pwrck.Pwrck(macro, args.tslew[0])
-		run = src.pwrck.PwrckRun(input)
+		input = potstill.pwrck.Pwrck(macro, args.tslew[0])
+		run = potstill.pwrck.PwrckRun(input)
 		return (args, input, run)
 	else:
-		run = src.pwrck.PwrckSweepRun(macro, args.tslew)
+		run = potstill.pwrck.PwrckSweepRun(macro, args.tslew)
 		return (args, None, run)
 
 
@@ -285,11 +286,11 @@ def mainCharPwrintcap(macro, parentParser, argv):
 	args = parser.parse_args(argv)
 
 	if len(args.tslew) == 1:
-		input = src.pwrintcap.Pwrintcap(macro, args.tslew[0])
-		run = src.pwrintcap.PwrintcapRun(input)
+		input = potstill.pwrintcap.Pwrintcap(macro, args.tslew[0])
+		run = potstill.pwrintcap.PwrintcapRun(input)
 		return (args, input, run)
 	else:
-		run = src.pwrintcap.PwrintcapSweepRun(macro, args.tslew)
+		run = potstill.pwrintcap.PwrintcapSweepRun(macro, args.tslew)
 		return (args, None, run)
 
 
@@ -300,11 +301,11 @@ def mainCharPwrout(macro, parentParser, argv):
 	args = parser.parse_args(argv)
 
 	if len(args.tslew) == 1 and len(args.cload) == 1:
-		input = src.pwrout.Pwrout(macro, args.tslew[0], args.cload[0])
-		run = src.pwrout.PwroutRun(input)
+		input = potstill.pwrout.Pwrout(macro, args.tslew[0], args.cload[0])
+		run = potstill.pwrout.PwroutRun(input)
 		return (args, input, run)
 	else:
-		run = src.pwrout.PwroutSweepRun(macro, args.tslew, args.cload)
+		run = potstill.pwrout.PwroutSweepRun(macro, args.tslew, args.cload)
 		return (args, None, run)
 
 
@@ -319,11 +320,11 @@ def mainCharTrdwr(macro, parentParser, argv):
 	args = parser.parse_args(argv)
 
 	if len(args.tslew) == 1 and len(args.cload) == 1:
-		input = src.trdwr.Trdwr(macro, args.tslew[0], args.cload[0])
-		run = src.trdwr.TrdwrRun(input)
+		input = potstill.trdwr.Trdwr(macro, args.tslew[0], args.cload[0])
+		run = potstill.trdwr.TrdwrRun(input)
 		return (args, input, run)
 	else:
-		run = src.trdwr.TrdwrSweepRun(macro, args.tslew, args.cload)
+		run = potstill.trdwr.TrdwrSweepRun(macro, args.tslew, args.cload)
 		return (args, None, run)
 
 
@@ -336,17 +337,17 @@ def mainCharTsuho(macro, parentParser, argv):
 	args = parser.parse_args(argv)
 
 	if len(args.tslewck) == 1 and len(args.tslewpin) == 1:
-		tsu_input = src.tsuho.Tsu(macro, args.tslewck[0], args.tslewpin[0])
-		tho_input = src.tsuho.Tho(macro, tsu_input.oceanOutputName, args.tslewck[0], args.tslewpin[0])
+		tsu_input = potstill.tsuho.Tsu(macro, args.tslewck[0], args.tslewpin[0])
+		tho_input = potstill.tsuho.Tho(macro, tsu_input.oceanOutputName, args.tslewck[0], args.tslewpin[0])
 
-		run = src.tsuho.TsuhoCombinedRun(tsu_input, tho_input)
+		run = potstill.tsuho.TsuhoCombinedRun(tsu_input, tho_input)
 		if args.setup:
 			return (args, tsu_input, run.su_run)
 		if args.hold:
 			return (args, tho_input, run.ho_run)
 		return (args, None, run)
 	else:
-		run = src.tsuho.TsuhoSweepRun(macro, args.tslewck, args.tslewpin)
+		run = potstill.tsuho.TsuhoSweepRun(macro, args.tslewck, args.tslewpin)
 		return (args, None, run)
 
 
@@ -372,15 +373,9 @@ def main(argv):
 		sys.exit(1)
 	mainName = "main" + argv[0].capitalize()
 	if mainName not in globals():
-		cmd = "%s/bin/%s" % (BASE, argv[0])
-		if os.path.exists(cmd):
-			sys.exit(subprocess.call([cmd] + argv[1:]))
-		elif os.path.exists(cmd+".sh"):
-			sys.exit(subprocess.call(["bash", cmd+".sh"] + argv[1:]))
-		else:
-			sys.stderr.write("Unknown command \"%s\"\n" % argv[0])
-			printUsage()
-			sys.exit(1)
+		sys.stderr.write("Unknown command \"%s\"\n" % argv[0])
+		printUsage()
+		sys.exit(1)
 	else:
 		globals()[mainName](argv[1:])
 
