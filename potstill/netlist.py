@@ -133,9 +133,10 @@ def generateADOH(size):
 		N += 1
 	N = 0
 	actHiInputs = (size > 3)
+	flipped_lines = set()
 	for i in range(2**size):
 		lines.append("X%d %s Z%d VDD VSS PSADOH%dR" % (N,
-			" ".join([("A%d" if (i if actHiInputs else ~i) & (1 << n) else "N%d") % n for n in range(size)]),
+			" ".join([("A%d" if (i if actHiInputs and n != 6 else ~i) & (1 << n) else "N%d") % n for n in range(size)]),
 			i,
 			2**size
 		))

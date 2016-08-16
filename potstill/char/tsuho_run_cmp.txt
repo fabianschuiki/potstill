@@ -1,0 +1,35 @@
+prec 1ps, 3 steps, liberal
+Iteration 6:
+  RA: Tsu rise = 38.15ps ±0.3052ps, fall = 27.77ps ±0.3052ps
+  RE: Tsu rise = -2.747ps ±0.3052ps, fall = -18.01ps ±0.3052ps
+  WA: Tsu rise = 35.1ps ±0.3052ps, fall = 16.78ps ±0.3052ps
+  WD: Tsu rise = 62.56ps ±0.3052ps, fall = 41.2ps ±0.3052ps
+  WE: Tsu rise = -2.747ps ±0.3052ps, fall = -18.01ps ±0.3052ps
+  precision = 0.6104ps
+
+prec 0.1ps, 5 steps, liberal
+Iteration 6:
+  RA: Tsu rise = 37.84ps ±0.0134ps, fall = 26.03ps ±0.0134ps
+  RE: Tsu rise = -3.711ps ±0.0134ps, fall = -17.72ps ±0.0134ps
+  WA: Tsu rise = 34.74ps ±0.0134ps, fall = 17.37ps ±0.0134ps
+  WD: Tsu rise = 63.67ps ±0.0134ps, fall = 40.52ps ±0.0134ps
+  WE: Tsu rise = -3.711ps ±0.0134ps, fall = -17.72ps ±0.0134ps
+  precision = 0.02679ps
+
+prec 0.1ps, 5 steps, normal
+Iteration 6:
+  RA: Tsu rise = 37.98ps ±0.0134ps, fall = 28.63ps ±0.0134ps
+  RE: Tsu rise = -0.09377ps ±0.0134ps, fall = -10.78ps ±0.0134ps
+  WA: Tsu rise = 36.1ps ±0.0134ps, fall = 20.4ps ±0.0134ps
+  WD: Tsu rise = 63.67ps ±0.0134ps, fall = 42.34ps ±0.0134ps
+  WE: Tsu rise = -0.09377ps ±0.0134ps, fall = -10.78ps ±0.0134ps
+  precision = 0.02679ps
+
+prec 0.1ps, 5 steps, conservative
+Iteration 6:
+  RA: Tsu rise = 37.98ps ±0.0134ps, fall = 28.68ps ±0.0134ps
+  RE: Tsu rise = 0.3617ps ±0.0134ps, fall = -10.73ps ±0.0134ps
+  WA: Tsu rise = 36.32ps ±0.0134ps, fall = 20.4ps ±0.0134ps
+  WD: Tsu rise = 63.67ps ±0.0134ps, fall = 42.4ps ±0.0134ps
+  WE: Tsu rise = 0.3617ps ±0.0134ps, fall = -10.73ps ±0.0134ps
+  precision = 0.02679ps

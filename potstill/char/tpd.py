@@ -3,86 +3,10 @@
 # This file implements input file generation and simulation execution for the
 # propagation and transition time analysis of a full memory macro.
 
-import sys, os, numbers, collections, subprocess
+import sys, os, subprocess
 import potstill, potstill.nodeset, potstill.netlist
-
-
-class ScsWriter(object):
-	def __init__(self):
-		super(ScsWriter, self).__init__()
-		self.lines = list()
-
-	def skip(self):
-		self.lines.append("")
-
-	def comment(self, *lines):
-		self.lines += [("// " + (x or "")).strip() for x in lines]
-
-	def include(self, *files):
-		self.lines += ["include \"%s\""%x for x in files]
-
-	def stmt(self, *args):
-		self.lines.append(" ".join([x for x in [self.argify(a) for a in args] if x is not None]))
-
-	def argify(self, v):
-		if isinstance(v, (list,tuple)) and len(v) == 2:
-			return v[0]+"="+self.argify(v[1]) if v[1] is not None else None
-		if isinstance(v, numbers.Integral):
-			return "%d" % v
-		elif isinstance(v, numbers.Real):
-			return "%g" % v
-		else:
-			return str(v)
-
-	def tran(self, stop, errpreset="conservative", readns="nodeset.ns", **kwargs):
-		self.stmt("tran", "tran", ("stop", stop), ("errpreset", errpreset), ("readns", readns), **kwargs)
-
-	def instance(self, name, terminals, *args):
-		self.stmt(name, "("+" ".join([self.argify(t) for t in terminals])+")", *args)
-
-	def vsource(self, name, out, ty, *args, gnd=0):
-		self.instance(name, [out,gnd], "vsource", ("type", ty), *args)
-
-	def vdc(self, name, out, *args, V="vdd"):
-		self.vsource(name, out, "dc", ("dc", V), *args)
-
-	def vpulse(self, name, out, val0, val1, *args, delay=None, width=None, period=None, rise="tslew", fall="tslew"):
-		self.vsource(name, out, "pulse", ("val0", val0), ("val1", val1), ("delay", delay), ("width", width), ("period", period), ("rise", rise), ("fall", fall), *args)
-
-	def collect(self):
-		return "\n".join([x.replace("\n", " \\\n") for x in self.lines])+"\n"
-
-
-class OcnWriter(object):
-	def __init__(self):
-		super(OcnWriter, self).__init__()
-		self.lines = list()
-
-	def skip(self):
-		self.lines.append("")
-
-	def comment(self, *lines):
-		self.lines += [("; " + (x or "")).strip() for x in lines]
-
-	def add(self, *lines):
-		for l in lines:
-			assert(isinstance(l, str))
-		self.lines += lines
-
-	def assign(self, var, value):
-		self.add(var+" = "+value)
-
-	def call(self, *args):
-		self.add(self.callexpr(*args))
-
-	def callexpr(self, name, *args):
-		return name + "("+", ".join(args)+")"
-
-	def result(self, name, value, fd="fd"):
-		self.call("fprintf", fd, "\"%s,%%g\\n\"" % name, value)
-
-	def collect(self):
-		return "\n".join([x.replace("\n", " \\\n") for x in self.lines])+"\n"
+from potstill.char import util
+from potstill.char.util import ScsWriter, OcnWriter
 
 
 class Input(object):
@@ -138,10 +62,10 @@ class Input(object):
 		wr.skip()
 
 		wr.comment("Stimuli Generation")
-		wr.vpulse("VCK", "CK", 0, "vdd", delay=str(1*self.T)+"-tslew/2", width=str(1*self.T)+"-tslew", period=2*self.T)
-		wr.vpulse("VWE", "WE", "vdd", 0, delay=str(2*self.T)+"-tslew/2")
-		wr.vpulse("VRE", "RE", 0, "vdd", delay=str(2*self.T)+"-tslew/2")
-		wr.vpulse("VRA", "RA", "vdd", 0, delay=str(4*self.T)+"-tslew/2")
+		wr.vpulse("VCK", "CK", 0, 0, "vdd", delay=str(1*self.T)+"-tslew/2", width=str(1*self.T)+"-tslew", period=2*self.T)
+		wr.vpulse("VWE", "WE", 0, "vdd", 0, delay=str(2*self.T)+"-tslew/2")
+		wr.vpulse("VRE", "RE", 0, 0, "vdd", delay=str(2*self.T)+"-tslew/2")
+		wr.vpulse("VRA", "RA", 0, "vdd", 0, delay=str(4*self.T)+"-tslew/2")
 		wr.skip()
 
 		wr.comment("Analysis")
@@ -185,38 +109,22 @@ class Input(object):
 		return wr.collect()
 
 
-class Run(object):
+class Run(util.Run):
 	def __init__(self, inp):
-		super(Run, self).__init__()
-		self.macro = inp.macro
+		super(Run, self).__init__(inp.macro)
 		self.inp = inp
 
-	def make_netlist(self, filename):
-		sys.stderr.write("Generating netlist %s\n" % filename)
-		with open(filename, "w") as f:
-			f.write(potstill.netlist.generate(self.macro.num_addr, self.macro.num_bits))
-
-	def make_nodeset(self, filename):
-		sys.stderr.write("Generating nodeset %s\n" % filename)
-		with open(filename, "w") as f:
-			f.write(potstill.nodeset.generate("X", self.macro.num_addr, self.macro.num_bits))
-
-	def exec_spectre(self, filename, output="psf", log="spectre.out", aps=True):
+	def exec_spectre(self, filename, **kwargs):
 		sys.stderr.write("Generating SPECTRE input %s\n" % filename)
 		with open(filename, "w") as f:
 			f.write(self.inp.make_spectre())
-		sys.stderr.write("Executing SPECTRE input %s\n" % filename)
-		cmd = ["cds_mmsim", "spectre", filename, "+escchars", "+log", log, "-format", "psfxl", "-raw", output]
-		if aps:
-			cmd.append("+aps")
-		subprocess.check_call(cmd)
+		super(Run, self).exec_spectre(filename, **kwargs)
 
-	def exec_ocean(self, filename, log="CDS.log"):
+	def exec_ocean(self, filename, **kwargs):
 		sys.stderr.write("Generating OCEAN input %s\n" % filename)
 		with open(filename, "w") as f:
 			f.write(self.inp.make_ocean())
-		sys.stderr.write("Executing OCEAN input %s\n" % filename)
-		subprocess.check_call(["cds_ic6", "ocean", "-nograph", "-log", log, "-replay", filename])
+		super(Run, self).exec_ocean(filename, **kwargs)
 
 	def run_spectre(self):
 		self.make_netlist("netlist.cir")
