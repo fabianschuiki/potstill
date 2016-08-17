@@ -23,5 +23,6 @@ make_char() {
 make_char pwrck $@
 make_char pwrintcap $@
 make_char pwrout $@
-make_char trdwr $@
+# make_char trdwr $@
+make_char tpd $@
 make_char tsuho $@

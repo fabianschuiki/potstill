@@ -13,7 +13,7 @@ from collections import OrderedDict
 parser = argparse.ArgumentParser(prog="potstill collect", description="Collect results from multiple parametric sweep runs.")
 parser.add_argument("FILENAME", type=str, help="name of the file to collect")
 parser.add_argument("-r", "--rows", action="store_true", help="treat first line as header, others as data")
-parser.add_argument("-d", "--dir", metavar=("DIR", "PARAMS"), nargs=2, action="append")
+parser.add_argument("-d", "--dir", metavar=("DIR", "PARAMS"), nargs=2, action="append", default=[])
 args = parser.parse_args()
 
 

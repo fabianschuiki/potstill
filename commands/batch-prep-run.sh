@@ -21,7 +21,19 @@ echo "cd \$(dirname \${BASH_SOURCE[0]})" >> run.sh
 echo "if [ -e exitcode ]; then rm exitcode; fi" >> run.sh
 echo "if [ \$# -eq 0 ]; then args=\"-r\"; else args=\"\$@\"; fi" >> run.sh
 echo "start=\$(date +%s.%N)" >> run.sh
-echo "potstill char $num_addr $num_bits --vdd $vdd --temp $temp $char ${@:6} \$args" >> run.sh
+
+case $char in
+tpd|tsuho)
+	echo "potstill char-$char $num_addr $num_bits $vdd $temp ${@:6} \"\$@\"" >> run.sh
+	;;
+*)
+	echo "potstill char $num_addr $num_bits --vdd $vdd --temp $temp $char ${@:6} \$args" >> run.sh
+	;;
+esac
+
+if [ $char = tsuho ]; then
+	echo "cat setup.csv hold.csv > results.csv" >> run.sh
+fi
 
 echo "status=\$?" >> run.sh
 echo "echo \$status > exitcode" >> run.sh

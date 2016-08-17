@@ -44,10 +44,17 @@ pwrout|trdwr)
 		done
 	done
 	;;
+tpd)
+	for tslew in $TSLEWS; do
+		for cload in $CLOADS; do
+			make_run "tslew=$tslew,cload=$cload" $@ $tslew $cload
+		done
+	done
+	;;
 tsuho)
 	for tslewck in $TSLEWS; do
 		for tslewpin in $TSLEWS; do
-			make_run "tslewck=$tslewck,tslewpin=$tslewpin" $@ --tslewck $tslewck --tslewpin $tslewpin
+			make_run "tslewck=$tslewck,tslewpin=$tslewpin" $@ $tslewck $tslewpin
 		done
 	done
 	;;
