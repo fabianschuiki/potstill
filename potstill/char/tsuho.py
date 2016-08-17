@@ -9,6 +9,10 @@ from potstill.char import util
 from potstill.char.util import ScsWriter, OcnWriter
 
 
+def d2str(v):
+	return "%.8g" % v
+
+
 def lerp(v, a, b, x, y):
 	f = float(v - a) / (b - a)
 	return x*(1-f) + y*f
@@ -33,8 +37,26 @@ class Probe(object):
 		self.outer = outer
 
 
-# Input files for the setup time analysis.
-class SetupInput(util.Input):
+class Pulse(object):
+	def __init__(self, start, end, start_clock=None, end_clock=None, inverted=False, repeat=False):
+		super(Pulse, self).__init__()
+		assert(start < end)
+		assert(start_clock is None or end_clock is None or start_clock < end_clock)
+		self.start = start
+		self.end = end
+		self.start_clock = start_clock
+		self.end_clock = end_clock
+		self.inverted = inverted
+		self.repeat = repeat
+
+	def val0(self):
+		return "0"
+
+	def val1(self):
+		return "-vdd" if self.inverted else "vdd"
+
+
+class Input(util.Input):
 	probes = [
 		Probe("RE", "X.XRWCKG.X0.n1", inverted=True, outer=True, relative_to_clock=False),
 		Probe("RA", "X.nRA0"),
@@ -44,7 +66,7 @@ class SetupInput(util.Input):
 	]
 
 	def __init__(self, macro, tslewck, tslewpin, num_steps=3, intervals=None, inclusive_intervals=True):
-		super(SetupInput, self).__init__(macro)
+		super(Input, self).__init__(macro)
 		self.tslewck = tslewck
 		self.tslewpin = tslewpin
 		self.num_steps = num_steps
@@ -74,7 +96,7 @@ class SetupInput(util.Input):
 			for (name,(rise,fall)) in self.intervals.items()
 		])
 
-		# Make list of pulses for each of the probes.
+		# Make a list of pulses for each of the probes.
 		self.pulses = dict([
 			(probe.name, list(self.calc_pulses(probe)))
 			for probe in self.probes
@@ -102,36 +124,6 @@ class SetupInput(util.Input):
 			yield intv[0] + i*f
 
 
-	# Generate a sequence of pulses represented as (start,width) tuples for the
-	# given probe and stops.
-	def calc_pulses(self, probe):
-		Tstart = (1 if probe.outer else 3)*self.T
-		Twidth = (10 if probe.outer else 4)*self.T
-		stops = self.stops[probe.name]
-		for step in range(self.num_steps):
-			rise = stops[0][step]
-			fall = stops[1][step]
-			ck = step*self.Tcycle + Tstart
-			s = ck + rise
-			w = Twidth - rise + fall
-			yield (s, w, ck, ck+Twidth)
-
-
-	# Create a tuple containing two lists containing the rising and falling
-	# edges for the given probe, respectively.
-	def calc_edges(self, probe):
-		if probe.relative_to_clock:
-			return (
-				[ck for (_,_,ck,_) in self.pulses[probe.name]],
-				[ck for (_,_,_,ck) in self.pulses[probe.name]]
-			)
-		else:
-			return (
-				[s   for (s,_,_,_) in self.pulses[probe.name]],
-				[s+w for (s,w,_,_) in self.pulses[probe.name]]
-			)
-
-
 	def make_spectre(self):
 		wr = ScsWriter()
 		wr.comment("Setup and hold time analysis for "+self.macro.name)
@@ -144,32 +136,35 @@ class SetupInput(util.Input):
 		wr.vdc("VDD", "VDD")
 		wr.skip()
 
-		wr.comment("Stimuli Generation")
-
 		# Generate two overlaid clock signals. The first clock impulse has a
 		# high rise time tsc. This is the critical edge for which setup time is
 		# measured. The second clock edge serves as a "safe" edge during which
 		# the content of the sequential cells is set to a known state in case of
 		# a setup violation.
-		wr.vpulse("VCK0", "nCK1", 0, 0, "vdd", delay=str(3*self.T)+"-tslewck/2", width=str(self.T)+"-tslewck", period=4*self.T, rise="tslewck", fall="tslewck")
-		wr.vpulse("VCK1", "CK", "nCK1", 0, "vdd", delay=str(1*self.T)+"-tslewck/2", width=str(1*self.T)+"-tslewck", period=4*self.T, rise="tslewck", fall="tslewck")
+		wr.comment("Clock Generation")
+		wr.vpulse("VCK0", "nCK1", 0, 0, "vdd", delay=d2str(3*self.T)+"-tslewck/2", width=d2str(self.T)+"-tslewck", period=4*self.T, rise="tslewck", fall="tslewck")
+		wr.vpulse("VCK1", "CK", "nCK1", 0, "vdd", delay=d2str(1*self.T)+"-tslewck/2", width=d2str(1*self.T)+"-tslewck", period=4*self.T, rise="tslewck", fall="tslewck")
+		wr.skip()
 
 		# Generate the input signals for each of the probing pins.
+		wr.comment("Stimuli Generation")
 		for probe in self.probes:
 
 			# Assemble a generator that produces the high and low vpulse
 			# terminals in conjunction with an index for each step.
 			name = "V"+probe.name
-			terms = ["0"] + ["n%s%d" % (name,i) for i in range(self.num_steps-1)] + [probe.terminal]
-			pulses = zip(terms[1:], terms[0:-1], self.pulses[probe.name], range(self.num_steps))
+			pulses = self.pulses[probe.name]
+			terms = ["0"] + ["n%s%d" % (name,i) for i in range(len(pulses)-1)] + [probe.terminal]
+			zp = zip(terms[1:], terms[0:-1], pulses, range(len(pulses)))
 
 			# Generate one voltage source for each individual pulse.
-			for (hi,lo,(s,w,_,_),step) in pulses:
-				wr.vpulse(name+str(step), hi, lo, 0, "vdd",
-					delay=str(s) + "-tslewpin/2",
-					width=str(w) + "-tslewpin",
+			for (hi,lo,p,step) in zp:
+				wr.vpulse(name+str(step), hi, lo, p.val0(), p.val1(),
+					delay=d2str(p.start) + "-tslewpin/2",
+					width=d2str(p.end-p.start) + "-tslewpin",
 					rise="tslewpin",
-					fall="tslewpin"
+					fall="tslewpin",
+					period=(self.Tcycle if p.repeat else None)
 				)
 
 		wr.skip()
@@ -261,9 +256,114 @@ class SetupInput(util.Input):
 		return results
 
 
-class SetupRun(util.Run):
-	def __init__(self, macro, tslewck, tslewpin, threshold=1.05, max_iterations=10, target_precision=1e-12):
-		super(SetupRun, self).__init__(macro)
+# Input file generator for the setup time analysis.
+class SetupInput(Input):
+	def __init__(self, *args, **kwargs):
+		super(SetupInput, self).__init__(*args, **kwargs)
+
+
+	# Generate a sequence of pulses that need to be applied to the input of the
+	# specified probe.
+	def calc_pulses(self, probe):
+		Tstart = (1 if probe.outer else 3)*self.T
+		Twidth = (10 if probe.outer else 4)*self.T
+		stops = self.stops[probe.name]
+		for step in range(self.num_steps):
+			rise = stops[0][step]
+			fall = stops[1][step]
+			ck = step*self.Tcycle + Tstart
+			s = ck + rise
+			w = Twidth - rise + fall
+			yield Pulse(s, s+w, ck, ck+Twidth)
+
+
+	# Generate a touple of two lists that contain the reference edges for
+	# propagation delay calculation, one for each cycle.
+	def calc_edges(self, probe):
+		pulses = self.pulses[probe.name]
+		if probe.relative_to_clock:
+			return (
+				[p.start_clock for p in pulses],
+				[p.end_clock   for p in pulses]
+			)
+		else:
+			return (
+				[p.start for p in pulses],
+				[p.end   for p in pulses]
+			)
+
+
+# Input file generator for the hold time analysis.
+class HoldInput(Input):
+	def __init__(self, *args, **kwargs):
+
+		# Load the setup times from disk.
+		with open("setup.csv") as f:
+			rd = csv.reader(f)
+			self.setup_times = dict([
+				(name, float(value)) for (name,value) in rd
+			])
+
+		# Call the parent __init__ function. This needs to happen after the
+		# setup times have been loaded, since the calc_pulses functions called
+		# by __init__ needs them.
+		super(HoldInput, self).__init__(*args, **kwargs)
+
+
+	# Generate a sequence of pulses that need to be applied to the input of the
+	# specified probe.
+	def calc_pulses(self, probe):
+		Tstart = (1 if probe.outer else 3)*self.T
+		Twidth = (10 if probe.outer else 4)*self.T
+
+		# Generate the safe pulse which causes the storage elements to
+		# transition to the intended value the cycle after the hold time test.
+		yield Pulse(Tstart+self.T, Tstart+Twidth+self.T, Tstart, Tstart+Twidth, repeat=True)
+
+		# Generate the application pulses that last from the setup time to the
+		# hold time being tested. Generate separate pulses for the rising and
+		# falling edges of the probe signal.
+		stops = self.stops[probe.name]
+		for step in range(self.num_steps):
+			rise = stops[0][step]
+			fall = stops[1][step]
+			ck_rise = step*self.Tcycle + Tstart
+			ck_fall = ck_rise + Twidth
+
+			# Rising edge.
+			s = ck_rise + self.setup_times["Tsu_%s_rise" % probe.name]
+			e = ck_rise - rise
+			if s < e - self.tslewpin:
+				yield Pulse(s, e)
+
+			# Falling edge.
+			s = ck_fall + self.setup_times["Tsu_%s_fall" % probe.name]
+			e = ck_fall - fall
+			if s < e - self.tslewpin:
+				yield Pulse(s, e, inverted=True)
+
+
+	# Generate a touple of two lists that contain the reference edges for
+	# propagation delay calculation, one for each cycle.
+	def calc_edges(self, probe):
+		Tstart = (1 if probe.outer else 3)*self.T
+		Twidth = (10 if probe.outer else 4)*self.T
+
+		if probe.relative_to_clock:
+			return (
+				[Tstart + i*self.Tcycle for i in range(self.num_steps)],
+				[Tstart + Twidth + i*self.Tcycle for i in range(self.num_steps)]
+			)
+		else:
+			return (
+				[Tstart + self.setup_times["Tsu_%s_rise" % probe.name] + i*self.Tcycle for i in range(self.num_steps)],
+				[Tstart + Twidth + self.setup_times["Tsu_%s_fall" % probe.name] + i*self.Tcycle for i in range(self.num_steps)],
+			)
+
+
+class Run(util.Run):
+	def __init__(self, output, figure, macro, tslewck, tslewpin, threshold=1.05, max_iterations=10, target_precision=1e-12):
+		super(Run, self).__init__(macro)
 		self.tslewck = tslewck
 		self.tslewpin = tslewpin
 		self.threshold = threshold
@@ -273,6 +373,8 @@ class SetupRun(util.Run):
 		self.iteration = 0
 		self.max_iterations = max_iterations
 		self.target_precision = target_precision
+		self.output = output
+		self.figure = figure
 
 	def prepare(self):
 		self.make_netlist("netlist.cir")
@@ -283,14 +385,14 @@ class SetupRun(util.Run):
 		# when self.intervals = None, the interval [-T/2,T/2] is inspected for
 		# all inputs.
 		filename = "input.scs"
-		inp = SetupInput(self.macro, self.tslewck, self.tslewpin, intervals=self.intervals, inclusive_intervals=(self.intervals is None))
+		inp = self.make_input(self.macro, self.tslewck, self.tslewpin, intervals=self.intervals, inclusive_intervals=(self.intervals is None))
 		with open(filename, "w") as f:
 			f.write(inp.make_spectre())
-		self.exec_spectre(filename, output="setup", format="psfascii", quiet=True)
-		results = inp.analyze("setup/tran.tran.tran")
+		self.exec_spectre(filename, output=self.output, format="psfascii", quiet=True)
+		results = inp.analyze(self.output+"/tran.tran.tran")
 
 		# If no baseline for Tpd has been established yet, i.e. this is the
-		# first iteration, use the propagation delay for Tsu = -T/2 as the
+		# first iteration, use the propagation delay for Tsu/Tho = -T/2 as the
 		# baseline.
 		if self.baseline is None:
 			self.baseline = dict([
@@ -325,19 +427,20 @@ class SetupRun(util.Run):
 
 
 		# Write this iteration's results to disk.
-		with open("setup.csv", "w") as f:
+		with open(self.output+".csv", "w") as f:
 			wr = csv.writer(f)
 			for probe in inp.probes:
 				(rise,fall) = self.intervals[probe.name]
-				wr.writerow(["Tsu_%s_rise" % probe.name, rise[0]])
-				wr.writerow(["Tsu_%s_fall" % probe.name, fall[0]])
+				wr.writerow(["%s_%s_rise" % (self.figure, probe.name), rise[0]])
+				wr.writerow(["%s_%s_fall" % (self.figure, probe.name), fall[0]])
 
 
 		# Write the current value range for the rise and fall times for each
 		# input to stdout, for informative purposes only.
 		print("Iteration %d:" % self.iteration)
 		for (name, (rise,fall)) in self.intervals.items():
-			print("  %s: Tsu rise = %.4gps ±%.4gps, fall = %.4gps ±%.4gps" % (name,
+			print("  %s: %s rise = %.4gps ±%.4gps, fall = %.4gps ±%.4gps" % (
+				name, self.figure,
 				(rise[0]+rise[1])*0.5*1e12, (rise[1]-rise[0])*0.5*1e12,
 				(fall[0]+fall[1])*0.5*1e12, (fall[1]-fall[0])*0.5*1e12
 			))
@@ -361,3 +464,30 @@ class SetupRun(util.Run):
 			self.run_iteration()
 
 		print("Finished after %d iterations, precision = %.4gps" % (self.iteration, self.precision*1e12))
+
+
+class SetupRun(Run):
+	def __init__(self, *args, **kwargs):
+		super(SetupRun, self).__init__("setup", "Tsu", *args, **kwargs)
+
+	def make_input(self, *args, **kwargs):
+		return SetupInput(*args, **kwargs)
+
+
+class HoldRun(Run):
+	def __init__(self, *args, **kwargs):
+		super(HoldRun, self).__init__("hold", "Tho", *args, **kwargs)
+
+	def make_input(self, *args, **kwargs):
+		return HoldInput(*args, **kwargs)
+
+
+class SetupHoldRun(object):
+	def __init__(self, *args, **kwargs):
+		super(SetupHoldRun, self).__init__()
+		self.setup = SetupRun(*args, **kwargs)
+		self.hold = HoldRun(*args, **kwargs)
+
+	def run(self):
+		self.setup.run()
+		self.hold.run()

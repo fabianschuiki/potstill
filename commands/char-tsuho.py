@@ -7,7 +7,7 @@
 import sys, os, argparse
 sys.path.insert(0, os.path.dirname(sys.path[0]))
 from potstill.char.util import *
-from potstill.char.tsuho import SetupInput, SetupRun
+from potstill.char.tsuho import SetupInput, HoldInput, SetupRun, HoldRun, SetupHoldRun
 
 
 # Parse the command line arguments.
@@ -24,18 +24,18 @@ args = parser.parse_args()
 
 # Create the input files.
 macro = argparse_get_macro(args)
-setup_inp = SetupInput(macro, args.TSLEWCK, args.TSLEWPIN)
 setup_run = SetupRun(macro, args.TSLEWCK, args.TSLEWPIN)
+hold_run  = HoldRun(macro, args.TSLEWCK, args.TSLEWPIN)
 
 if args.setup:
-	inp = setup_inp
+	inp = SetupInput(macro, args.TSLEWCK, args.TSLEWPIN)
 	run = setup_run
 elif args.hold:
-	inp = hold_inp
+	inp = HoldInput(macro, args.TSLEWCK, args.TSLEWPIN)
 	run = hold_run
 else:
 	inp = None
-	run = None
+	run = SetupHoldRun(macro, args.TSLEWCK, args.TSLEWPIN)
 
 if args.spectre:
 	if inp is None:
@@ -46,7 +46,7 @@ if args.spectre:
 
 if args.analyze is not None:
 	if inp is None:
-		sys.stderr.write("specify either --setup or --hold in conjunction with --ocean\n")
+		sys.stderr.write("specify either --setup or --hold in conjunction with --analyze\n")
 		sys.exit(1)
 	print(inp.analyze(args.analyze))
 	sys.exit(0)

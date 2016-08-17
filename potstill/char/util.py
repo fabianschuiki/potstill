@@ -31,7 +31,7 @@ class ScsWriter(object):
 		if isinstance(v, numbers.Integral):
 			return "%d" % v
 		elif isinstance(v, numbers.Real):
-			return "%g" % v
+			return "%.8g" % v
 		else:
 			return str(v)
 
@@ -137,7 +137,7 @@ class Input(object):
 	def write_ocean_prolog(self, wr, psf_path="psf", output_path="results.csv"):
 		wr.add("openResults(\"%s\")" % psf_path)
 		wr.add("selectResult('tran)")
-		wr.add("VDD = %g" % self.macro.vdd)
+		wr.add("VDD = %.8g" % self.macro.vdd)
 		wr.add("fd = outfile(\"%s\", \"w\")" % output_path)
 
 	def write_ocean_epilog(self, wr):
