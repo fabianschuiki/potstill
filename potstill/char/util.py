@@ -170,3 +170,33 @@ class Run(object):
 	def exec_ocean(self, filename, log="CDS.log"):
 		sys.stderr.write("Executing OCEAN input %s\n" % filename)
 		subprocess.check_call(["cds_ic6", "ocean", "-nograph", "-log", log, "-replay", filename])
+
+
+class RegularRun(Run):
+	def __init__(self, inp):
+		super(RegularRun, self).__init__(inp.macro)
+		self.inp = inp
+
+	def make_spectre_input(self, filename, **kwargs):
+		sys.stderr.write("Generating SPECTRE input %s\n" % filename)
+		with open(filename, "w") as f:
+			f.write(self.inp.make_spectre())
+
+	def make_ocean_input(self, filename, **kwargs):
+		sys.stderr.write("Generating OCEAN input %s\n" % filename)
+		with open(filename, "w") as f:
+			f.write(self.inp.make_ocean())
+
+	def run_spectre(self):
+		self.make_netlist("netlist.cir")
+		self.make_nodeset("nodeset.ns")
+		self.make_spectre_input("input.scs")
+		self.exec_spectre("input.scs")
+
+	def run_ocean(self):
+		self.make_ocean_input("analyze.ocn")
+		self.exec_ocean("analyze.ocn")
+
+	def run(self):
+		self.run_spectre()
+		self.run_ocean()

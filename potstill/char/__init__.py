@@ -5,7 +5,7 @@ import potstill.macro
 import potstill.netlist
 
 
-BASE = os.path.dirname(__file__)+"/.."
+BASE = os.path.dirname(__file__)+"/../.."
 
 
 def merge_dict(d, *args):
