@@ -5,7 +5,6 @@
 # a propagation and transition time characterization.
 
 import sys, os, argparse
-sys.path.insert(0, os.path.dirname(sys.path[0]))
 from potstill.char.util import *
 from potstill.char.tpd import Input, Run
 

@@ -6,7 +6,6 @@ import math
 import argparse
 import yaml
 import subprocess
-sys.path.insert(0, sys.path[0]+"/..")
 import potstill.macro
 import potstill.pwrintcap
 import potstill.pwrout

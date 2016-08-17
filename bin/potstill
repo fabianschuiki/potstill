@@ -20,7 +20,7 @@ if [ -e "$CMD.sh" ]; then
 	exec bash -- "$CMD.sh" "${@:2}"
 fi
 if [ -e "$CMD.py" ]; then
-	exec python3 "$CMD.py" "${@:2}"
+	exec env PYTHONPATH="$BASE:$PYTHONPATH" python3 "$CMD.py" "${@:2}"
 fi
 
-exec python3 "$BASE/bin/main.py" "${@:1}"
+exec env PYTHONPATH="$BASE:$PYTHONPATH" python3 "$BASE/bin/main.py" "${@:1}"

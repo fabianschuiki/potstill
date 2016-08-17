@@ -5,7 +5,6 @@
 # an internal power characterization of the clock pin.
 
 import sys, os, argparse
-sys.path.insert(0, os.path.dirname(sys.path[0]))
 from potstill.char.util import *
 from potstill.char.pwrck import Input, Run
 

@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2016 Fabian Schuiki
 import sys, os, argparse, itertools
-sys.path.insert(0, sys.path[0]+"/..")
 import potstill.macro
 import potstill.timing
 import potstill.layout
