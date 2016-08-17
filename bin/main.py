@@ -8,11 +8,9 @@ import yaml
 import subprocess
 sys.path.insert(0, sys.path[0]+"/..")
 import potstill.macro
-import potstill.pwrck
 import potstill.pwrintcap
 import potstill.pwrout
 import potstill.trdwr
-import potstill.tsuho
 from potstill import nodeset
 from potstill import netlist
 
