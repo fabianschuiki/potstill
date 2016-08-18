@@ -121,22 +121,23 @@ class Figures(object):
 
 
 class Timing(object):
-	def __init__(self, macond):
+	def __init__(self, macro):
 		super(Timing, self).__init__()
-		self.macond = macond
-		with open(macond.techdir+"/config.yml") as f:
+		self.macro = macro
+		with open(macro.techdir+"/config.yml") as f:
 			self.config = yaml.load(f)
 
-		self.name = self.macond.name + ("_%dV%dC" % (int(self.macond.vdd*100), int(self.macond.temp)))
+		self.suffix = ("%dV%dC" % (int(self.macro.vdd*100), int(self.macro.temp)))
+		self.name = self.macro.name + "_" + self.suffix
 
 		# Load the timing tables.
-		basedir = "%s/tables/%d" % (macond.techdir, macond.num_words)
+		basedir = "%s/tables/%d" % (macro.techdir, macro.num_words)
 		tables = [
-			Table(basedir+"/pwrck.csv", ["tslew"], macond.num_bits),
-			Table(basedir+"/pwrintcap.csv", ["tslew"], macond.num_bits),
-			Table(basedir+"/pwrout.csv", ["tslew", "cload"], macond.num_bits),
-			Table(basedir+"/trdwr.csv", ["tslew", "cload"], macond.num_bits),
-			Table(basedir+"/tsuho.csv", ["tslewck", "tslewpin"], macond.num_bits),
+			Table(basedir+"/pwrck.csv", ["tslew"], macro.num_bits),
+			Table(basedir+"/pwrintcap.csv", ["tslew"], macro.num_bits),
+			Table(basedir+"/pwrout.csv", ["tslew", "cload"], macro.num_bits),
+			Table(basedir+"/trdwr.csv", ["tslew", "cload"], macro.num_bits),
+			Table(basedir+"/tsuho.csv", ["tslewck", "tslewpin"], macro.num_bits),
 		]
 
 		# Merge the timing figures.

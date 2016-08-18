@@ -92,22 +92,23 @@ class Inst(object):
 
 
 class Layout(object):
-	def __init__(self, num_addr, num_bits):
+	def __init__(self, macro):
 		super(Layout, self).__init__()
-		self.num_addr = num_addr
-		self.num_bits = num_bits
+		self.macro = macro
 		self.cells = list()
-		self.num_words = 2**num_addr
+		self.num_addr = macro.num_addr
+		self.num_bits = macro.num_bits
+		self.num_words = 2**self.num_addr
 		self.name = "PS%dX%d" % (self.num_words, self.num_bits)
 		with open(os.path.dirname(__file__)+"/../umc65/config.yml") as f:
 			self.config = yaml.load(f)
 
 		# Calculate the number of bits and address bits that go to the left and
 		# right of the central spine.
-		self.num_bits_left  = int(num_bits/2)
-		self.num_bits_right = num_bits - self.num_bits_left
-		self.num_addr_left  = int(num_addr/2)
-		self.num_addr_right = num_addr - self.num_addr_left
+		self.num_bits_left  = int(self.num_bits/2)
+		self.num_bits_right = self.num_bits - self.num_bits_left
+		self.num_addr_left  = int(self.num_addr/2)
+		self.num_addr_right = self.num_addr - self.num_addr_left
 
 		# Load the cell descriptions.
 		cells = self.config["cells"]
@@ -135,7 +136,7 @@ class Layout(object):
 
 		# Calculate the macro size.
 		self.size = Vec(
-			num_bits * bit_width + addrdec_width,
+			self.num_bits * bit_width + addrdec_width,
 			(self.num_words+2) * self.row_height
 		)
 

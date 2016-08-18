@@ -23,7 +23,7 @@ echo "if [ \$# -eq 0 ]; then args=\"-r\"; else args=\"\$@\"; fi" >> run.sh
 echo "start=\$(date +%s.%N)" >> run.sh
 
 case $char in
-tpd|tsuho)
+pwrck|tpd|tsuho)
 	echo "potstill char-$char $num_addr $num_bits $vdd $temp ${@:6} \"\$@\"" >> run.sh
 	;;
 *)
