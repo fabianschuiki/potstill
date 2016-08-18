@@ -19,6 +19,7 @@ class Cell(object):
 		super(Cell, self).__init__()
 		self.name = name
 		self.config = config
+		self.gds_struct = config["gds_struct"]
 
 
 class InstPin(object):
@@ -35,11 +36,16 @@ class InstPin(object):
 		self.use = "CLOCK" if name == "CK" else "SIGNAL"
 		self.shape = None
 		self.layer = config["layer"]
+		self.layer_gds = config["layer_gds"]
 		self.additional_rects = additional_rects
 		self.anchor = Vec(
 			config["anchor"][0] * self.inst.size.x,
 			config["anchor"][1] * self.inst.size.y
 		) if "anchor" in config else Vec(0,0)
+
+		# Calculate where the pin label should be positioned.
+		r = next(self.rects())
+		self.label_pos = Vec((r[0].x+r[1].x)*0.5, (r[0].y+r[1].y)*0.5)
 
 	def rects(self):
 		if "geometry" in self.config:
@@ -100,7 +106,7 @@ class Layout(object):
 		self.num_bits = macro.num_bits
 		self.num_words = 2**self.num_addr
 		self.name = "PS%dX%d" % (self.num_words, self.num_bits)
-		with open(os.path.dirname(__file__)+"/../umc65/config.yml") as f:
+		with open(macro.techdir+"/config.yml") as f:
 			self.config = yaml.load(f)
 
 		# Calculate the number of bits and address bits that go to the left and
@@ -115,8 +121,10 @@ class Layout(object):
 		self.rwckg_cell = Cell("rwckg", cells["rwckg"])
 		self.addrdec_cell = Cell("addrdec", cells["addrdec"])
 		self.addrdec_cell.name += str(self.num_words)
+		self.addrdec_cell.gds_struct += str(self.num_words)
 		self.bitarray_cell = Cell("bitarray", cells["bitarray"])
 		self.bitarray_cell.name += str(self.num_words)
+		self.bitarray_cell.gds_struct += str(self.num_words)
 		self.rareg_cell = Cell("rareg", cells["rareg"])
 
 		# Read and prepare some basic dimensions required for partitioning.
@@ -140,15 +148,12 @@ class Layout(object):
 			(self.num_words+2) * self.row_height
 		)
 
-
-
 		# Lower Bits
 		x_lower   = 0
 		x_addrdec = x_lower + self.num_bits_left * bit_width
 		x_upper   = x_addrdec + addrdec_width
 		bitarray_size = Vec(bit_width, self.num_words * self.row_height)
 
-		x = 0
 		self.bitarrays = [
 			Inst(
 				self, self.bitarray_cell,
@@ -171,13 +176,10 @@ class Layout(object):
 		]
 
 		# Address Decoder
-		xral = x
-		self.addrdec = Inst(self, self.addrdec_cell, "XAD", Vec(x, 0), index=self.num_words, size=Vec(addrdec_width, (self.num_words+1)*self.row_height))
-		x += addrdec_width
-		xrar = x
+		self.addrdec = Inst(self, self.addrdec_cell, "XAD", Vec(x_addrdec, 0), index=self.num_words, size=Vec(addrdec_width, (self.num_words+1)*self.row_height))
 
 		# Global Clock Gate
-		rwckg_x = x - rwckg_width
+		rwckg_x = x_upper - rwckg_width
 		rwckg_y = self.num_words * self.row_height
 		self.rwckg = Inst(self, self.rwckg_cell, "XRWCKG", Vec(rwckg_x, rwckg_y))
 

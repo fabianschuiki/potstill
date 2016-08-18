@@ -12,6 +12,7 @@ from potstill.timing import Timing
 from potstill.output.lib import make_lib
 from potstill.output.lef import make_lef
 from potstill.output.model import make_vhdl
+from potstill.output.gds import make_gds
 
 
 # Parse the command line arguments.
@@ -41,18 +42,9 @@ def open_outfile(suffix):
 	return open(name, "w")
 
 
-# Generate netlist file.
-with open_outfile(".cir") as f:
-	f.write(netlist.generate(args.NADDR, args.NBITS))
-	f.write("\n")
-
-# Generate nodeset file.
-with open_outfile(".ns") as f:
-	f.write(nodeset.generate(args.nodeset_prefix, args.NADDR, args.NBITS))
-
-# Generate the simulation model.
-with open_outfile(".vhd") as f:
-	f.write(make_vhdl(macro[0]))
+# Generate GDS file.
+sys.stdout.write(prefix+".gds\n")
+make_gds(layout, prefix+".gds")
 
 # Generate LEF file.
 with open_outfile(".lef") as f:
@@ -62,3 +54,15 @@ with open_outfile(".lef") as f:
 for timing in timings:
 	with open_outfile("_"+timing.suffix+".lib") as f:
 		f.write(make_lib(timing, layout))
+
+# Generate netlist file.
+with open_outfile(".cir") as f:
+	f.write(netlist.generate(args.NADDR, args.NBITS))
+
+# Generate nodeset file.
+with open_outfile(".ns") as f:
+	f.write(nodeset.generate(args.nodeset_prefix, args.NADDR, args.NBITS))
+
+# Generate the simulation model.
+with open_outfile(".vhd") as f:
+	f.write(make_vhdl(macro[0]))

@@ -1,4 +1,5 @@
 # Copyright (c) 2016 Fabian Schuiki
+#
 # This file implements LIB output generation.
 
 import itertools

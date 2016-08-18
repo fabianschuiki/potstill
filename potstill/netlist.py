@@ -52,7 +52,7 @@ def generate(size, bits):
 		netlistPrefix,
 		generateAD(size),
 		generateBA(size),
-		"\n".join(lines)
+		"\n".join(lines)+"\n"
 	])
 
 
