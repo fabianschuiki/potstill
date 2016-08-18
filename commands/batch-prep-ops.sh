@@ -13,7 +13,7 @@ chmod +x prep.sh
 
 echo "#!/bin/bash" > merge.sh
 echo "cd \$(dirname \${BASH_SOURCE[0]})" >> merge.sh
-for char in pwrck pwrintcap pwrout trdwr tsuho; do
+for char in pwrck pwrintcap pwrout tpd tsuho; do
 	echo "potstill collect -r $char/results.csv > $char.csv" >> merge.sh
 done
 chmod +x merge.sh

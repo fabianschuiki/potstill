@@ -20,6 +20,6 @@ for nb in "${@:3}"; do
 	CMD="$CMD -d $MACRO_NAME num_bits=$nb"
 done
 
-for char in pwrck pwrintcap pwrout trdwr tsuho; do
+for char in pwrck pwrintcap pwrout tpd tsuho; do
 	$CMD $char.csv > $outdir/$num_words/$char.csv
 done

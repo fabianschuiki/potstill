@@ -22,7 +22,7 @@ class Pin(object):
 # operating conditions and pivot columns, and linearly interpolates the data
 # based on a num_bits column.
 class Table(object):
-	def __init__(self, path, pivot_columns, num_bits):
+	def __init__(self, path, pivot_columns, num_bits, negate=False):
 		super(Table, self).__init__()
 		with open(path) as f:
 			rd = csv.reader(f)
@@ -104,7 +104,7 @@ class Table(object):
 						else:
 							v = datapoints[stops[0]]
 
-						dst_b[run] = v
+						dst_b[run] = -v if negate else v
 
 
 class Figures(object):
@@ -136,8 +136,8 @@ class Timing(object):
 			Table(basedir+"/pwrck.csv", ["tslew"], macro.num_bits),
 			Table(basedir+"/pwrintcap.csv", ["tslew"], macro.num_bits),
 			Table(basedir+"/pwrout.csv", ["tslew", "cload"], macro.num_bits),
-			Table(basedir+"/trdwr.csv", ["tslew", "cload"], macro.num_bits),
-			Table(basedir+"/tsuho.csv", ["tslewck", "tslewpin"], macro.num_bits),
+			Table(basedir+"/tpd.csv", ["tslew", "cload"], macro.num_bits),
+			Table(basedir+"/tsuho.csv", ["tslewck", "tslewpin"], macro.num_bits, negate=True),
 		]
 
 		# Merge the timing figures.
