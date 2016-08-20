@@ -15,18 +15,20 @@ class Vec():
 
 
 class Cell(object):
-	def __init__(self, name, config):
+	def __init__(self, name, config, suffix=None):
 		super(Cell, self).__init__()
-		self.name = name
+		self.name = name + (suffix or "")
 		self.config = config
-		self.gds_struct = config["gds_struct"]
+		self.gds_struct = config["gds_struct"] + (suffix or "")
 
 
 class InstPin(object):
 	def __init__(self, name, config, inst, index=None, track=None, additional_rects=None):
 		self.name = name
+		self.name_gds = name
 		if index is not None:
 			self.name += "[%d]" % index
+			self.name_gds += "%d" % index
 		self.config = config
 		self.inst = inst
 		self.index = index
@@ -106,6 +108,7 @@ class Layout(object):
 		self.num_bits = macro.num_bits
 		self.num_words = 2**self.num_addr
 		self.name = "PS%dX%d" % (self.num_words, self.num_bits)
+		self.wiring = list()
 		with open(macro.techdir+"/config.yml") as f:
 			self.config = yaml.load(f)
 
@@ -119,13 +122,11 @@ class Layout(object):
 		# Load the cell descriptions.
 		cells = self.config["cells"]
 		self.rwckg_cell = Cell("rwckg", cells["rwckg"])
-		self.addrdec_cell = Cell("addrdec", cells["addrdec"])
-		self.addrdec_cell.name += str(self.num_words)
-		self.addrdec_cell.gds_struct += str(self.num_words)
-		self.bitarray_cell = Cell("bitarray", cells["bitarray"])
-		self.bitarray_cell.name += str(self.num_words)
-		self.bitarray_cell.gds_struct += str(self.num_words)
+		self.addrdec_cell = Cell("addrdec", cells["addrdec"], suffix=str(self.num_words))
+		self.bitarray_cell = Cell("bitarray", cells["bitarray"], suffix=str(self.num_words))
 		self.rareg_cell = Cell("rareg", cells["rareg"])
+		self.rareg_lwire_cell = Cell("raregwire", cells["raregwire"], suffix=str(self.num_addr_left))
+		self.rareg_rwire_cell = Cell("raregwire", cells["raregwire"], suffix=str(self.num_addr_right))
 
 		# Read and prepare some basic dimensions required for partitioning.
 		G = self.config["track"]
@@ -141,6 +142,13 @@ class Layout(object):
 		rwckg_width = self.config["widths"]["rwckg"]*G
 		addrdec_width = self.addrdec_width_trk*G
 		rareg_width = self.config["widths"]["rareg"]*G
+
+		# Calculate the supply pin tracks.
+		self.supply_layer_gds = self.config["supply_layer_gds"]
+		self.supply_tracks = [
+			("VSS" if y%2 == 0 else "VDD", y*self.row_height)
+			for y in range(self.num_words+3)
+		]
 
 		# Calculate the macro size.
 		self.size = Vec(
@@ -208,6 +216,19 @@ class Layout(object):
 			)
 			for i in range(self.num_addr_right)
 		]
+
+		y_raregwire = (self.num_words+1) * self.row_height
+		self.wiring.append(Inst(
+			self, self.rareg_lwire_cell,
+			"XRAWL",
+			Vec(x_addrdec, y_raregwire)
+		))
+		self.wiring.append(Inst(
+			self, self.rareg_rwire_cell,
+			"XRAWR",
+			Vec(x_raupper, y_raregwire),
+			mx=True
+		))
 
 
 	def pins(self):

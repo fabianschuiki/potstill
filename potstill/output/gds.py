@@ -105,10 +105,18 @@ def make_phalanx_input(layout, outfile):
 		wr.inst(r)
 	wr.skip()
 
+	# Instantiate the wiring.
+	wr.comment("Wiring")
+	for r in layout.wiring:
+		wr.inst(r)
+	wr.skip()
+
 	# Add the pin labels. These are used to perform LVS checks.
 	wr.comment("Pin Labels")
+	for (name, y) in layout.supply_tracks:
+		wr.cmd("add_gds_text", layout.supply_layer_gds, 0, layout.addrdec.pos.x, y, '"'+name+'"')
 	for pin in layout.pins():
-		wr.cmd("add_gds_text", pin.layer_gds, 0, pin.label_pos.x, pin.label_pos.y, '"'+pin.name+'"')
+		wr.cmd("add_gds_text", pin.layer_gds, 0, pin.label_pos.x, pin.label_pos.y, '"'+pin.name_gds+'"')
 
 	# Close the root cell.
 	wr.popgrp()
