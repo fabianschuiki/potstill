@@ -6,6 +6,8 @@
 # or the location of obstructions and pins.
 
 import sys, os, yaml
+from bisect import bisect
+from functools import reduce
 
 
 class Vec():
@@ -71,7 +73,7 @@ class InstPin(object):
 
 
 class Inst(object):
-	def __init__(self, layout, cell, name, pos, mx=False, my=False, index=None, size=None):
+	def __init__(self, layout, cell, name, pos, mx=False, my=False, index=None, size=None, stack=None, stack_step=None):
 		super(Inst, self).__init__()
 		self.layout = layout
 		self.cell = cell
@@ -81,6 +83,8 @@ class Inst(object):
 		self.my = my
 		self.index = index
 		self.size = size
+		self.stack = stack
+		self.stack_step = stack_step
 
 	def to_world(self, v):
 		return Vec(
@@ -97,6 +101,13 @@ class Inst(object):
 				else:
 					yield InstPin(name, cfg, self, index=self.index)
 
+
+def layout_columns(columns):
+	x = 0
+	for col in columns:
+		col.pos.x = (x + col.size.x if col.mx else x)
+		x += col.size.x
+	return x
 
 
 class Layout(object):
@@ -127,6 +138,9 @@ class Layout(object):
 		self.rareg_cell = Cell("rareg", cells["rareg"])
 		self.rareg_lwire_cell = Cell("raregwire", cells["raregwire"], suffix=str(self.num_addr_left))
 		self.rareg_rwire_cell = Cell("raregwire", cells["raregwire"], suffix=str(self.num_addr_right))
+		self.welltap_cell = Cell("welltap", cells["welltap"])
+		self.welltap_awire_cell = Cell("welltap_wa", self.welltap_cell.config["wiring_a"])
+		self.welltap_bwire_cell = Cell("welltap_wb", self.welltap_cell.config["wiring_b"])
 
 		# Read and prepare some basic dimensions required for partitioning.
 		G = self.config["track"]
@@ -142,6 +156,10 @@ class Layout(object):
 		rwckg_width = self.config["widths"]["rwckg"]*G
 		addrdec_width = self.addrdec_width_trk*G
 		rareg_width = self.config["widths"]["rareg"]*G
+		bitarray_size = Vec(bit_width, self.num_words * self.row_height)
+		column_height = (self.num_words+1)*self.row_height
+		welltap_width = float(self.welltap_cell.config["width"])
+		welltap_cadence = float(self.welltap_cell.config["cadence"])
 
 		# Calculate the supply pin tracks.
 		self.supply_layer_gds = self.config["supply_layer_gds"]
@@ -150,50 +168,139 @@ class Layout(object):
 			for y in range(self.num_words+3)
 		]
 
-		# Calculate the macro size.
-		self.size = Vec(
-			self.num_bits * bit_width + addrdec_width,
-			(self.num_words+2) * self.row_height
-		)
+		# Assemble the columns of the memory, which consist of bit arrays,
+		# welltaps, and the address decoder.
 
-		# Lower Bits
-		x_lower   = 0
-		x_addrdec = x_lower + self.num_bits_left * bit_width
-		x_upper   = x_addrdec + addrdec_width
-		bitarray_size = Vec(bit_width, self.num_words * self.row_height)
-
-		self.bitarrays = [
+		# Lower and upper bits.
+		lower_bits = [
 			Inst(
 				self, self.bitarray_cell,
 				"XBA%d" % i,
-				Vec(x_lower + (i+1)*bit_width, 0),
+				Vec(0, 0),
 				mx=True,
 				index=i,
 				size=bitarray_size
 			)
 			for i in range(self.num_bits_left)
-		] + [
+		]
+		upper_bits = [
 			Inst(
 				self, self.bitarray_cell,
 				"XBA%d" % (i + self.num_bits_left),
-				Vec(x_upper + i*bit_width, 0),
+				Vec(0, 0),
 				index=i + self.num_bits_left,
 				size=bitarray_size
 			)
 			for i in range(self.num_bits_right)
 		]
+		self.bitarrays = lower_bits + upper_bits
 
 		# Address Decoder
-		self.addrdec = Inst(self, self.addrdec_cell, "XAD", Vec(x_addrdec, 0), index=self.num_words, size=Vec(addrdec_width, (self.num_words+1)*self.row_height))
+		self.addrdec = Inst(
+			self, self.addrdec_cell, "XAD",
+			# Vec(x_addrdec, 0),
+			Vec(0, 0),
+			index=self.num_words,
+			size=Vec(addrdec_width, column_height)
+		)
+
+		columns = lower_bits + [self.addrdec] + upper_bits
+
+
+		# Determine a reasonable distribution for the welltaps.
+		width = layout_columns(columns)
+		num_welltaps = int(width/(welltap_cadence - welltap_width)) + 2
+		max_spacing = None
+		welltap_placement = None
+
+		while welltap_placement is None or max_spacing > welltap_cadence:
+
+			# Calculate the approximate position for each welltap.
+			approx_welltap_positions = [
+				width * i / (num_welltaps-1) for i in range(num_welltaps)
+			]
+
+			# Calculate the index of the column before which each welltap should
+			# be inserted. This positions each welltap to the left of each
+			# approximate positions.
+			colpos = [col.pos.x for col in columns]
+			welltap_indices = [
+				max(0, min(len(columns), bisect(colpos, x)))
+				for x in approx_welltap_positions
+			]
+
+			# Extract the position the welltaps would have if placed at the
+			# indices found above.
+			welltap_placement = [
+				(i, columns[i].pos.x if i < len(columns) else width)
+				for i in welltap_indices
+			]
+
+			# Calculate the maximum spacing between two neighbouring welltaps.
+			max_spacing = reduce(max, [
+				b - a + welltap_width
+				for ((_,a),(_,b)) in zip(welltap_placement[:-1], welltap_placement[1:])
+			])
+
+			# Increase the number of welltaps. If the max_spacing calculated
+			# above is greater than the required welltap cadence, the loop body
+			# is re-executed with one more welltap.
+			num_welltaps += 1
+
+
+		# Insert the welltaps and the required wiring on top of them.
+		self.welltaps = list()
+		for (i, (offset, _)) in enumerate(reversed(welltap_placement)):
+			wt = Inst(self, self.welltap_cell, "WT%d" % i, Vec(0,0),
+				size=Vec(welltap_width, column_height),
+				stack=self.num_words+1,
+				stack_step=self.row_height
+			)
+			self.welltaps.append(wt)
+			columns.insert(offset, wt)
+
+
+		# Rearrange the columns a final time and calculate the size of the
+		# macro.
+		self.size = Vec(
+			layout_columns(columns),
+			(self.num_words+2) * self.row_height
+		)
+
+
+		# Add the wiring to the welltaps.
+		for wt in self.welltaps[1:-1]:
+			flip = wt.pos.x < self.addrdec.pos.x + 0.5*addrdec_width
+			self.wiring.append(Inst(
+				self, self.welltap_awire_cell, wt.name+"WA",
+				Vec(wt.pos.x + welltap_width if flip else wt.pos.x, wt.pos.y),
+				stack=self.num_words,
+				stack_step=self.row_height,
+				mx=flip
+			))
+			self.wiring.append(Inst(
+				self, self.welltap_bwire_cell, wt.name+"WB",
+				Vec(
+					wt.pos.x + welltap_width if flip else wt.pos.x,
+					wt.pos.y + self.num_words * self.row_height
+				),
+				mx=flip
+			))
+
+
+		# Place the global clock gate and address registers which are attached
+		# to the address decoder layout-wise.
+		x_spine_l = self.addrdec.pos.x
+		x_spine_r = x_spine_l + self.addrdec.size.x
 
 		# Global Clock Gate
-		rwckg_x = x_upper - rwckg_width
+		rwckg_x = x_spine_r - rwckg_width
 		rwckg_y = self.num_words * self.row_height
 		self.rwckg = Inst(self, self.rwckg_cell, "XRWCKG", Vec(rwckg_x, rwckg_y))
 
 		# Read Address Registers
-		x_ralower = x_addrdec - (self.num_addr_left) * rareg_width
-		x_raupper = x_upper
+		x_ralower = x_spine_l - (self.num_addr_left) * rareg_width
+		x_raupper = x_spine_r
 		y_rareg = (self.num_words+2) * self.row_height
 
 		self.raregs = [
@@ -221,14 +328,25 @@ class Layout(object):
 		self.wiring.append(Inst(
 			self, self.rareg_lwire_cell,
 			"XRAWL",
-			Vec(x_addrdec, y_raregwire)
+			Vec(x_spine_l, y_raregwire)
 		))
 		self.wiring.append(Inst(
 			self, self.rareg_rwire_cell,
 			"XRAWR",
-			Vec(x_raupper, y_raregwire),
+			Vec(x_spine_r, y_raregwire),
 			mx=True
 		))
+
+		# Add the welltaps flanking the read address registers.
+		for (p, x) in [
+			("L", self.raregs[0].pos.x - rareg_width - welltap_width),
+			("R", self.raregs[-1].pos.x + rareg_width)
+		]:
+			self.welltaps.append(Inst(
+				self, self.welltap_cell, "WTRA%s" % p, Vec(x, y_rareg),
+				size=Vec(welltap_width, self.row_height),
+				my=True
+			))
 
 
 	def pins(self):

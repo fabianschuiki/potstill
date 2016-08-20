@@ -44,11 +44,22 @@ class PhalanxWriter(object):
 		self.lines.append(self.prefix+"}")
 
 	def inst(self, inst):
-		self.pushgrp("inst", inst.cell.gds_struct, inst.name)
-		self.cmd("set_position", inst.pos.x, inst.pos.y)
-		if inst.mx or inst.my:
-			self.cmd("set_orientation", "MX" if inst.mx else None, "MY" if inst.my else None)
-		self.popgrp()
+		if inst.stack is None:
+			self.pushgrp("inst", inst.cell.gds_struct, inst.name)
+			self.cmd("set_position", inst.pos.x, inst.pos.y)
+			if inst.mx or inst.my:
+				self.cmd("set_orientation", "MX" if inst.mx else None, "MY" if inst.my else None)
+			self.popgrp()
+		else:
+			dy = -inst.stack_step if inst.my else inst.stack_step
+			for i in range(inst.stack):
+				y = i*dy + (i%2)*dy
+				my = ((i%2==1) != inst.my)
+				self.pushgrp("inst", inst.cell.gds_struct, "%s%d" % (inst.name,i))
+				self.cmd("set_position", inst.pos.x, inst.pos.y+y)
+				if inst.mx or my:
+					self.cmd("set_orientation", "MX" if inst.mx else None, "MY" if my else None)
+				self.popgrp()
 
 	def collect(self):
 		return "\n".join(self.lines)+"\n"
@@ -103,6 +114,12 @@ def make_phalanx_input(layout, outfile):
 	wr.comment("Read Address Registers")
 	for r in layout.raregs:
 		wr.inst(r)
+	wr.skip()
+
+	# Instantiate the welltaps.
+	wr.comment("Welltaps")
+	for wt in layout.welltaps:
+		wr.inst(wt)
 	wr.skip()
 
 	# Instantiate the wiring.
