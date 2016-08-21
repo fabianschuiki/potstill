@@ -3,6 +3,7 @@ import sys, os, subprocess, csv
 from collections import OrderedDict
 import potstill.macro
 import potstill.netlist
+import potstill.nodeset
 
 
 BASE = os.path.dirname(__file__)+"/../.."

@@ -31,7 +31,7 @@ class Input(util.Input):
 
 		wr.comment("Circuit Under Test")
 		addrs = ["A"]*(self.macro.num_addr-1)
-		self.write_spectre_cut(wr, RA=["0"]+addrs, WA=["VDD"]+addrs, WD="VDD")
+		self.write_spectre_cut(wr, RA=["0"]+addrs, WA=["VDD"]+addrs, WD="WD")
 		wr.vdc("VDD", "VDD")
 		wr.skip()
 
@@ -50,12 +50,14 @@ class Input(util.Input):
 			period=4*self.Tcycle)
 		wr.vpulse("VWE", "WE", 0, 0, "vdd",
 			delay=self.Tstart_write)
+		wr.vpulse("VWD", "WD", 0, "vdd", 0,
+			delay=self.Tstart_rw)
 		wr.skip()
 
 		wr.comment("Analysis")
 		wr.tran(8*self.Tcycle)
 		wr.stmt("save VDD:p")
-		wr.stmt("save CK A RD* RE WE")
+		wr.stmt("save CK A RD0 RE WE WD")
 
 		return wr.collect()
 
