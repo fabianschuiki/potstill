@@ -7,10 +7,10 @@ def generate(size, bits):
 	lines = list()
 	lines.append(".SUBCKT PS%dX%d CK RE %s %s WE %s %s VDD VSS" % (
 		2**size, bits,
-		" ".join(["RA%d" % i for i in range(size)]),
-		" ".join(["RD%d" % i for i in range(bits)]),
-		" ".join(["WA%d" % i for i in range(size)]),
-		" ".join(["WD%d" % i for i in range(bits)]),
+		" ".join(["RA%d" % i for i in reversed(range(size))]),
+		" ".join(["RD%d" % i for i in reversed(range(bits))]),
+		" ".join(["WA%d" % i for i in reversed(range(size))]),
+		" ".join(["WD%d" % i for i in reversed(range(bits))]),
 	))
 
 	netsRA = " ".join(["nRA%d" % i for i in range(size)])
