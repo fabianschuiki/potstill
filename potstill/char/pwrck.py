@@ -11,8 +11,8 @@ from potstill.char.util import ScsWriter, OcnWriter
 
 
 class Input(util.Input):
-	def __init__(self, macro, tslew):
-		super(Input, self).__init__(macro)
+	def __init__(self, macro, tslew, **kwargs):
+		super(Input, self).__init__(macro, **kwargs)
 		self.tslew = tslew
 		self.T = 5e-9
 		self.Tcycle = 3*self.T
@@ -69,9 +69,9 @@ class Input(util.Input):
 
 		wr.comment("Calculate leakage power")
 		wr.result("P_leak", "integ(-IT(\"VDD:p\") %g %g) / %g * VDD" % (
-			0*self.T,
+			0.5*self.T,
 			1*self.T,
-			1*self.T
+			0.5*self.T
 		))
 		wr.skip()
 
