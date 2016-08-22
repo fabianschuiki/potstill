@@ -103,22 +103,21 @@ class Input(util.Input):
 			("write", self.Tstart_write, 4, False),
 			("rw",    self.Tstart_rw,    4, True)
 		]:
-			for (offset, edge) in [(0, "rise"), (1, "fall")]:
-				stops = [start + (1+offset)*self.T + i*self.Tcycle for i in range(num_cycles)]
-				parts = [
-					"integ(-IT(\"VDD:p\") %g %g)" % (stop, stop+self.T)
-					for stop in stops
-				]
-				joined = " + ".join(parts)
-				if len(parts) > 1:
-					joined = "("+joined+")"
-				energy_expr = "%s*VDD/%d" % (
-					joined,
-					num_cycles
-				)
-				if rd_toggle and edge == "rise":
-					energy_expr = "%s - %d*E_cload" % (energy_expr, num_cycles/2)
-				wr.result("E_%s_%s" % (name, edge), energy_expr)
+			stops = [start + 1*self.T + i*self.Tcycle for i in range(num_cycles)]
+			parts = [
+				"integ(-IT(\"VDD:p\") %g %g)" % (stop, stop+2*self.T)
+				for stop in stops
+			]
+			joined = " + ".join(parts)
+			if len(parts) > 1:
+				joined = "("+joined+")"
+			energy_expr = "%s*VDD/%d" % (
+				joined,
+				num_cycles
+			)
+			if rd_toggle:
+				energy_expr = "%s - %d*E_cload" % (energy_expr, num_cycles/2)
+			wr.result("E_%s" % name, energy_expr)
 		wr.skip()
 
 		self.write_ocean_epilog(wr)
