@@ -120,16 +120,14 @@ class CommonArgs(object):
 		if not no_spectre:
 			parser.add_argument("--dump-spectre", action="store_true", help="write SPECTRE input file to stdout")
 			parser.add_argument("--only-spectre", action="store_true", help="only run SPECTRE")
-
 			parser.add_argument("--spectre", type=str, help="name of the SPECTRE input file")
 			parser.add_argument("--netlist", type=str, help="name of the netlist file")
 			parser.add_argument("--nodeset", type=str, help="name of the nodeset file")
-
 			parser.add_argument("--keep-spectre", action="store_true", help="don't create new SPECTRE input file")
 			parser.add_argument("--keep-netlist", action="store_true", help="don't create new netlist file")
 			parser.add_argument("--keep-nodeset", action="store_true", help="don't create new nodeset file")
-
 			parser.add_argument("-c", "--cut", type=str, help="name of the circuit to instantiate")
+			parser.add_argument("--postlayout", action="store_true", help="run SPECTRE with the +postlayout switch")
 
 		# Add OCEAN-specific options.
 		if not no_ocean:
@@ -158,6 +156,7 @@ class CommonArgs(object):
 		if not self.no_spectre:
 			opts["dont_netlist"] = self.args.keep_netlist
 			opts["dont_nodeset"] = self.args.keep_nodeset
+			opts["postlayout"] = self.args.postlayout
 		return opts
 
 	def handle_input(self, inp):
@@ -267,9 +266,10 @@ class Input(object):
 
 
 class Run(object):
-	def __init__(self, macro):
+	def __init__(self, macro, postlayout=False):
 		super(Run, self).__init__()
 		self.macro = macro
+		self.postlayout = postlayout
 
 	def make_netlist(self, filename):
 		sys.stderr.write("Generating netlist %s\n" % filename)
@@ -283,9 +283,11 @@ class Run(object):
 
 	def exec_spectre(self, filename, output="psf", log="spectre.out", aps=True, format="psfxl", quiet=False):
 		sys.stderr.write("Executing SPECTRE input %s\n" % filename)
-		cmd = ["cds_mmsim", "spectre", filename, "+escchars", "+log", log, "-format", format, "-raw", output]
+		cmd = ["cds_mmsim", "spectre", "-64", filename, "+escchars", "+log", log, "-format", format, "-raw", output]
 		if aps:
 			cmd.append("+aps")
+		if self.postlayout:
+			cmd.append("+postlayout")
 		subprocess.check_call(cmd, stdout=(subprocess.DEVNULL if quiet else None))
 
 	def exec_ocean(self, filename, log="CDS.log"):

@@ -73,7 +73,7 @@ class Input(util.Input):
 		wr.skip()
 
 		wr.comment("Analysis")
-		wr.tran(self.Tend) # needs errpreset=conservative, lest trapezoidal ringing
+		wr.tran(self.Tend, ("writefinal", "spectre.fc"), readns='"'+self.nodeset_name+'"') # needs errpreset=conservative, lest trapezoidal ringing
 		wr.stmt("save VDD:p")
 		wr.stmt("save CK A WAH RD0 RE WE WD")
 
