@@ -53,8 +53,12 @@ class PhalanxWriter(object):
 		else:
 			dy = -inst.stack_step if inst.my else inst.stack_step
 			for i in range(inst.stack):
-				y = i*dy + (i%2)*dy
-				my = ((i%2==1) != inst.my)
+				if inst.stack_noflip:
+					y = i*dy
+					my = inst.my
+				else:
+					y = i*dy + (i%2)*dy
+					my = ((i%2==1) != inst.my)
 				self.pushgrp("inst", inst.cell.gds_struct, "%s%d" % (inst.name,i))
 				self.cmd("set_position", inst.pos.x, inst.pos.y+y)
 				if inst.mx or my:
@@ -125,6 +129,12 @@ def make_phalanx_input(layout, outfile):
 	# Instantiate the wiring.
 	wr.comment("Wiring")
 	for r in layout.wiring:
+		wr.inst(r)
+	wr.skip()
+
+	# Instantiate the fillers.
+	wr.comment("Fillers")
+	for r in layout.fillers:
 		wr.inst(r)
 	wr.skip()
 

@@ -73,7 +73,7 @@ class InstPin(object):
 
 
 class Inst(object):
-	def __init__(self, layout, cell, name, pos, mx=False, my=False, index=None, size=None, stack=None, stack_step=None):
+	def __init__(self, layout, cell, name, pos, mx=False, my=False, index=None, size=None, stack=None, stack_step=None, stack_noflip=False, data=dict()):
 		super(Inst, self).__init__()
 		self.layout = layout
 		self.cell = cell
@@ -85,6 +85,8 @@ class Inst(object):
 		self.size = size
 		self.stack = stack
 		self.stack_step = stack_step
+		self.stack_noflip = stack_noflip
+		self.__dict__.update(data)
 
 	def to_world(self, v):
 		return Vec(
@@ -136,11 +138,18 @@ class Layout(object):
 		self.addrdec_cell = Cell("addrdec", cells["addrdec"], suffix=str(self.num_words))
 		self.bitarray_cell = Cell("bitarray", cells["bitarray"], suffix=str(self.num_words))
 		self.rareg_cell = Cell("rareg", cells["rareg"])
-		self.rareg_lwire_cell = Cell("raregwire", cells["raregwire"], suffix=str(self.num_addr_left))
-		self.rareg_rwire_cell = Cell("raregwire", cells["raregwire"], suffix=str(self.num_addr_right))
+		self.rareg_vwire_cells = [
+			Cell("raregwire", cells["raregwire"], suffix=str(i+1))
+			for i in range(4)
+		]
+		self.rareg_hwire_a_cell = Cell("raregwireha", cells["raregwire"], suffix="HA")
+		self.rareg_hwire_b_cell = Cell("raregwireha", cells["raregwire"], suffix="HB")
 		self.welltap_cell = Cell("welltap", cells["welltap"])
 		self.welltap_awire_cell = Cell("welltap_wa", self.welltap_cell.config["wiring_a"])
 		self.welltap_bwire_cell = Cell("welltap_wb", self.welltap_cell.config["wiring_b"])
+		self.welltap_pwr_inner_cell = Cell("welltap_wpi", self.welltap_cell.config["pwr_inner"])
+		self.welltap_pwr_outer_cell = Cell("welltap_wpo", self.welltap_cell.config["pwr_outer"])
+		self.filler_cell = Cell("filler", cells["filler"])
 
 		# Read and prepare some basic dimensions required for partitioning.
 		G = self.config["track"]
@@ -253,7 +262,7 @@ class Layout(object):
 		for (i, (offset, _)) in enumerate(reversed(welltap_placement)):
 			wt = Inst(self, self.welltap_cell, "WT%d" % i, Vec(0,0),
 				size=Vec(welltap_width, column_height),
-				stack=self.num_words+1,
+				stack=self.num_words+2,
 				stack_step=self.row_height
 			)
 			self.welltaps.append(wt)
@@ -287,6 +296,22 @@ class Layout(object):
 				mx=flip
 			))
 
+		# Add the power routing ontop of the welltaps.
+		for wt in self.welltaps:
+			self.wiring.append(Inst(
+				self, self.welltap_pwr_inner_cell, wt.name+"WPI",
+				wt.pos,
+				stack=self.num_words+2,
+				stack_step=self.row_height
+			))
+			self.wiring.append(Inst(
+				self, self.welltap_pwr_outer_cell, wt.name+"WPO",
+				Vec(wt.pos.x, wt.pos.y+self.row_height),
+				stack=self.num_words+1,
+				stack_step=self.row_height,
+				stack_noflip=True
+			))
+
 
 		# Place the global clock gate and address registers which are attached
 		# to the address decoder layout-wise.
@@ -307,46 +332,102 @@ class Layout(object):
 			Inst(
 				self, self.rareg_cell,
 				"XRA%d" % i,
-				Vec(x_ralower + (i+1)*rareg_width, y_rareg),
+				Vec(self.bitarrays[self.num_bits_left-self.num_addr_left+i].pos.x, y_rareg),
 				index=i,
 				mx=True,
-				my=True
+				my=True,
+				data = {
+					"ytrack": self.num_addr_left - i - 1,
+					"ymax": self.num_addr_left
+				}
 			)
 			for i in range(self.num_addr_left)
 		] + [
 			Inst(
 				self, self.rareg_cell,
 				"XRA%d" % (i+self.num_addr_left),
-				Vec(x_raupper + i*rareg_width, y_rareg),
+				Vec(self.bitarrays[self.num_bits_left+i].pos.x, y_rareg),
 				index=(i + self.num_addr_left),
-				my=True
+				my=True,
+				data = {
+					"ytrack": i,
+					"ymax": self.num_addr_right
+				}
 			)
 			for i in range(self.num_addr_right)
 		]
 
+		# Wire up the RAREGs.
 		y_raregwire = (self.num_words+1) * self.row_height
-		self.wiring.append(Inst(
-			self, self.rareg_lwire_cell,
-			"XRAWL",
-			Vec(x_spine_l, y_raregwire)
-		))
-		self.wiring.append(Inst(
-			self, self.rareg_rwire_cell,
-			"XRAWR",
-			Vec(x_spine_r, y_raregwire),
-			mx=True
-		))
-
-		# Add the welltaps flanking the read address registers.
-		for (p, x) in [
-			("L", self.raregs[0].pos.x - rareg_width - welltap_width),
-			("R", self.raregs[-1].pos.x + rareg_width)
-		]:
-			self.welltaps.append(Inst(
-				self, self.welltap_cell, "WTRA%s" % p, Vec(x, y_rareg),
-				size=Vec(welltap_width, self.row_height),
-				my=True
+		for ra in self.raregs:
+			# Vertical breakout.
+			self.wiring.append(Inst(
+				self, self.rareg_vwire_cells[ra.ytrack],
+				"XRAWV%d" % ra.index,
+				Vec(ra.pos.x, y_raregwire),
+				mx=ra.mx
 			))
+
+			# Horizontal lanes.
+			for i in range(ra.ymax-ra.ytrack-1):
+				self.wiring.append(Inst(
+					self, self.rareg_hwire_a_cell,
+					"XRAWH%dY%d" % (ra.index, i),
+					Vec(ra.pos.x, y_raregwire + 0.4e-6 - (ra.ymax-i-1)*0.2e-6),
+					mx=ra.mx
+				))
+
+
+		# Add the wiring that is necessary on top of the welltaps which were
+		# placed among the RAREGs.
+		for wt in self.welltaps:
+			if wt.pos.x >= self.raregs[0].pos.x and wt.pos.x <= self.raregs[-1].pos.x:
+				flip = wt.pos.x < self.addrdec.pos.x + 0.5*addrdec_width
+				x = wt.pos.x + welltap_width if flip else wt.pos.x
+				self.wiring.append(Inst(
+					self, self.welltap_bwire_cell, wt.name+"WB",
+					Vec(
+						x,
+						wt.pos.y + (self.num_words+2) * self.row_height
+					),
+					mx=flip,
+					my=True
+				))
+
+				# Gather a list of horizontal tracks this welltap interrupts.
+				tracks = list()
+				if x < self.addrdec.pos.x + 0.5*addrdec_width:
+					for ra in self.raregs:
+						if ra.pos.x < x:
+							tracks.append(y_raregwire + 0.4e-6 - ra.ytrack*0.2e-6)
+				else:
+					for ra in self.raregs:
+						if ra.pos.x > x:
+							tracks.append(y_raregwire + 0.4e-6 - ra.ytrack*0.2e-6)
+
+				# Fill in the interrupted horizontal tracks.
+				for t in tracks:
+					self.wiring.append(Inst(
+						self, self.rareg_hwire_b_cell, wt.name+"WRAB",
+						Vec(x,t),
+						mx=flip
+					))
+
+
+
+		# Add the filler cells in the top row.
+		self.fillers = list()
+		for ba in self.bitarrays:
+			if ba.pos.x < self.raregs[0].pos.x - 0.5*bit_width or ba.pos.x > self.raregs[-1].pos.x + 0.5*bit_width:
+				self.fillers.append(Inst(
+					self, self.filler_cell, ba.name+"FILL",
+					Vec(
+						ba.pos.x,
+						(self.num_words+2) * self.row_height
+					),
+					mx=ba.mx,
+					my=True
+				))
 
 
 	def pins(self):
