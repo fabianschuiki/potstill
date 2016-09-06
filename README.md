@@ -8,7 +8,7 @@ This is *Potstill*, an open source generator for standard cell based memories. I
 - a simulation model
 - a SPICE netlist and nodeset for LVS verification and transistor-level simulation
 
-Potstill is written in Python to allow for easy modification and adjustments. It relies on a separate project, Phalanx, to process GDS data. Due to restrictions imposed by silicon foundries, no cell layouts can be published in the context of an open source project.
+Potstill is written in Python to allow for easy modification and adjustments. It relies on a separate project, [Phalanx](https://github.com/fabianschuiki/phalanx), to process GDS data. Due to restrictions imposed by silicon foundries, no cell layouts can be published in the context of an open source project.
 
 
 ## Installation
